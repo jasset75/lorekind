@@ -1,0 +1,19 @@
+{
+  "name": "@lorefold/studio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/svelte": "9.0.1",
+    "@lorefold/core": "workspace:*",
+    "@lorefold/theme": "workspace:*",
+    "astro": "7.2.6",
+    "svelte": "5.56.10"
+  }
+}

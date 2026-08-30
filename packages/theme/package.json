@@ -1,0 +1,14 @@
+{
+  "name": "@lorefold/theme",
+  "version": "0.0.0",
+  "description": "Semantic theme contract and default tokens for Lorefold",
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json"
+  }
+}

@@ -1,0 +1,26 @@
+[tools]
+node = "24.13.0"
+pnpm = "10.25.0"
+
+[env]
+ASTRO_TELEMETRY_DISABLED = "1"
+
+[tasks.install]
+run = "pnpm install --frozen-lockfile"
+description = "Install the pinned workspace dependencies"
+
+[tasks.dev]
+run = "pnpm dev"
+description = "Start Lorefold Studio"
+
+[tasks.check]
+run = "pnpm check"
+description = "Run the complete local quality gate"
+
+[tasks.test]
+run = "pnpm test"
+description = "Run unit tests"
+
+[tasks.build]
+run = "pnpm build"
+description = "Build Lorefold Studio"

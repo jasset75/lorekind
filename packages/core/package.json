@@ -1,0 +1,13 @@
+{
+  "name": "@lorefold/core",
+  "version": "0.0.0",
+  "description": "Framework-neutral Fold and authorization domain for Lorefold",
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "lorefold",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.25.0",
+  "engines": {
+    "node": "24.13.0",
+    "pnpm": "10.25.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @lorefold/studio dev",
+    "build": "pnpm --filter @lorefold/studio build",
+    "preview": "pnpm --filter @lorefold/studio preview",
+    "typecheck": "pnpm --recursive typecheck",
+    "lint": "eslint .",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "test": "vitest run",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@emnapi/core": "1.11.3",
+    "@emnapi/runtime": "1.11.3",
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.1.2",
+    "eslint": "10.0.1",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-astro": "3.1.0",
+    "eslint-plugin-svelte": "3.23.0",
+    "prettier": "3.9.0",
+    "prettier-plugin-astro": "0.14.1",
+    "prettier-plugin-svelte": "3.4.1",
+    "svelte-eslint-parser": "1.8.1",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.0"
+  }
+}
