@@ -1,5 +1,5 @@
 {
-  "name": "lorefold",
+  "name": "lorekind",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,9 +9,9 @@
     "pnpm": "10.25.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @lorefold/studio dev",
-    "build": "pnpm --filter @lorefold/studio build",
-    "preview": "pnpm --filter @lorefold/studio preview",
+    "dev": "pnpm --filter @lorekind/studio dev",
+    "build": "pnpm --filter @lorekind/studio build",
+    "preview": "pnpm --filter @lorekind/studio preview",
     "typecheck": "pnpm --recursive typecheck",
     "lint": "eslint .",
     "format": "prettier . --write",

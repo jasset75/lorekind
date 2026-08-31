@@ -1,7 +1,7 @@
 {
-  "name": "@lorefold/theme",
+  "name": "@lorekind/theme",
   "version": "0.0.0",
-  "description": "Semantic theme contract and default tokens for Lorefold",
+  "description": "Semantic theme contract and default tokens for Lorekind",
   "type": "module",
   "license": "Apache-2.0",
   "exports": {

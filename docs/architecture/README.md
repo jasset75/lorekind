@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Use this directory for decisions that define Lorefold's public technical
+Use this directory for decisions that define Lorekind's public technical
 boundaries. Records are immutable in intent: supersede an accepted decision
 with a new record instead of silently rewriting its conclusion.
 

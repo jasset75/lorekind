@@ -1,6 +1,6 @@
 # Code of conduct
 
-Lorefold is committed to a welcoming, safe, and constructive community.
+Lorekind is committed to a welcoming, safe, and constructive community.
 
 ## Expected behavior
 

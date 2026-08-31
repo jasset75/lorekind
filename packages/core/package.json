@@ -1,7 +1,7 @@
 {
-  "name": "@lorefold/core",
+  "name": "@lorekind/core",
   "version": "0.0.0",
-  "description": "Framework-neutral Fold and authorization domain for Lorefold",
+  "description": "Framework-neutral Fold and authorization domain for Lorekind",
   "type": "module",
   "license": "Apache-2.0",
   "exports": {

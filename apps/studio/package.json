@@ -1,5 +1,5 @@
 {
-  "name": "@lorefold/studio",
+  "name": "@lorekind/studio",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@astrojs/svelte": "9.0.1",
-    "@lorefold/core": "workspace:*",
-    "@lorefold/theme": "workspace:*",
+    "@lorekind/core": "workspace:*",
+    "@lorekind/theme": "workspace:*",
     "astro": "7.2.6",
     "svelte": "5.56.10"
   }

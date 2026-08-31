@@ -5,14 +5,14 @@
 
 ## Context
 
-Lorefold must provide a modern editorial interface while remaining useful to
+Lorekind must provide a modern editorial interface while remaining useful to
 projects that do not use Astro, Svelte, GitHub, GitLab, or any particular
 application content model. It must also let editorial users contribute without
 receiving repository membership or provider credentials.
 
 ## Decision
 
-Lorefold begins as a pnpm monorepo with four boundaries:
+Lorekind begins as a pnpm monorepo with four boundaries:
 
 ```text
 apps/studio       Astro application with selective Svelte hydration
@@ -55,4 +55,4 @@ ordinary content or curator configuration.
 - **Direct browser-to-Git provider access:** rejected because repository tokens
   and provider membership are not the editorial authorization model.
 - **Application catalogue types in Core:** rejected because a deployment is a
-  consumer, not Lorefold's domain definition.
+  consumer, not Lorekind's domain definition.

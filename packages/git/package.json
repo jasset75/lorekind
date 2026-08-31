@@ -1,7 +1,7 @@
 {
-  "name": "@lorefold/git",
+  "name": "@lorekind/git",
   "version": "0.0.0",
-  "description": "Provider-neutral Git workflow contracts for Lorefold",
+  "description": "Provider-neutral Git workflow contracts for Lorekind",
   "type": "module",
   "license": "Apache-2.0",
   "exports": {

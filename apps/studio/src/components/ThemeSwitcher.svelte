@@ -12,12 +12,12 @@
 
   function applyTheme(value: ThemeMode): void {
     mode = value;
-    localStorage.setItem("lorefold-theme", value);
+    localStorage.setItem("lorekind-theme", value);
     document.documentElement.dataset.theme = resolvedTheme(value);
   }
 
   onMount(() => {
-    const stored = localStorage.getItem("lorefold-theme");
+    const stored = localStorage.getItem("lorekind-theme");
     if (stored === "light" || stored === "dark" || stored === "high-contrast") {
       mode = stored;
     }
@@ -46,24 +46,24 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--lf-color-text-muted);
+    color: var(--lk-color-text-muted);
     font-size: 0.78rem;
     font-weight: 650;
   }
 
   select {
     min-height: 2.2rem;
-    border: 1px solid var(--lf-color-border);
-    border-radius: var(--lf-radius-sm);
+    border: 1px solid var(--lk-color-border);
+    border-radius: var(--lk-radius-sm);
     padding: 0 2rem 0 0.7rem;
-    color: var(--lf-color-text);
-    background: var(--lf-color-surface-raised);
+    color: var(--lk-color-text);
+    background: var(--lk-color-surface-raised);
     font: inherit;
   }
 
   select:focus-visible {
     outline: none;
-    box-shadow: var(--lf-focus-ring);
+    box-shadow: var(--lk-focus-ring);
   }
 
   @media (max-width: 680px) {

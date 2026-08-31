@@ -35,7 +35,7 @@
     place-items: center;
     border-radius: 0.75rem 0.75rem 0.75rem 0.2rem;
     color: white;
-    background: var(--lf-color-accent);
+    background: var(--lk-color-accent);
     font-weight: 820;
   }
 
@@ -46,7 +46,7 @@
   }
 
   .eyebrow {
-    color: var(--lf-color-text-muted);
+    color: var(--lk-color-text-muted);
     font-size: 0.67rem;
     font-weight: 750;
     letter-spacing: 0.08em;
@@ -58,7 +58,7 @@
     border: 0;
     padding: 0;
     overflow: hidden;
-    color: var(--lf-color-text);
+    color: var(--lk-color-text);
     background: transparent;
     font: inherit;
     font-weight: 720;
@@ -66,7 +66,7 @@
   }
 
   select:focus-visible {
-    outline: 2px solid var(--lf-color-accent);
+    outline: 2px solid var(--lk-color-accent);
     outline-offset: 0.25rem;
   }
 </style>

@@ -1,4 +1,4 @@
-# Lorefold roadmap
+# Lorekind roadmap
 
 This roadmap records product outcomes rather than calendar promises. Each phase
 must preserve the security boundary: the browser is a client, never the final
@@ -6,7 +6,7 @@ authorization authority.
 
 ## Phase 0 — Foundation
 
-- [x] Establish the Lorefold name and product boundary.
+- [x] Establish the Lorekind name and product boundary.
 - [x] Select GitHub as the public upstream.
 - [x] Create the Astro + Svelte workspace scaffold.
 - [x] Define initial Fold, authorization, Git, and theme contracts.
@@ -44,7 +44,7 @@ placing provider credentials in the browser.
 
 - Implement the GitLab adapter against the same conformance suite.
 - Integrate an external identity provider at a test deployment boundary.
-- Map application resources to scoped Fold grants outside Lorefold Core.
+- Map application resources to scoped Fold grants outside Lorekind Core.
 - Submit structured content changes as GitLab merge requests.
 - Prove grant revocation, protected-branch enforcement, and audit attribution.
 
@@ -60,7 +60,7 @@ making that creator a GitLab project member.
 - Versioned, installable themes and extensions.
 - Stable extension API with compatibility policy.
 
-Exit: external projects can extend Lorefold without forking Studio or Core.
+Exit: external projects can extend Lorekind without forking Studio or Core.
 
 ## Phase 5 — Community release
 
@@ -70,5 +70,5 @@ Exit: external projects can extend Lorefold without forking Studio or Core.
 - Provide starter deployments and framework examples.
 - Run accessibility, security, and provider-conformance audits.
 
-Exit: Lorefold is supportable as an independent open-source project with its own
+Exit: Lorekind is supportable as an independent open-source project with its own
 maintainers, users, and release lifecycle.

@@ -1,8 +1,8 @@
-# Lorefold
+# Lorekind
 
 **Community-owned content, versioned in Git.**
 
-Lorefold is an open-source, framework-agnostic, Git-native CMS for communities
+Lorekind is an open-source, framework-agnostic, Git-native CMS for communities
 that want friendly editorial workflows without giving every editor unrestricted
 repository access.
 
@@ -14,9 +14,9 @@ repository access.
 A **Fold** is an independently governed editorial space. It groups content,
 schemas, members, grants, and workflow policy. A Fold can represent a site,
 publication, community, collection, or creator channel without putting those
-application-specific concepts into Lorefold Core.
+application-specific concepts into Lorekind Core.
 
-Lorefold separates three identities:
+Lorekind separates three identities:
 
 - product contributors use the public GitHub workflow;
 - editorial users authenticate with the deploying application;

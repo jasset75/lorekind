@@ -5,19 +5,19 @@
 
 ## Context
 
-Lorefold is intended for a broad open-source community whose deployments may
+Lorekind is intended for a broad open-source community whose deployments may
 already keep private platforms and content workflows on different Git hosts.
 
 ## Decision
 
-Lorefold's public source, issues, releases, and community pull requests live on
+Lorekind's public source, issues, releases, and community pull requests live on
 GitHub. GitHub hosting does not make GitHub the only content provider.
 
 The GitHub adapter is the first planned adapter. The GitLab adapter is also an
 early requirement so existing GitLab deployments do not need a repository
 migration. Both must pass a shared conformance suite.
 
-Editorial users authenticate with the Lorefold deployment. They do not need a
+Editorial users authenticate with the Lorekind deployment. They do not need a
 GitHub or GitLab account. A restricted service identity performs bounded branch,
 commit, and pull- or merge-request operations only after server authorization.
 

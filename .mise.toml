@@ -11,7 +11,7 @@ description = "Install the pinned workspace dependencies"
 
 [tasks.dev]
 run = "pnpm dev"
-description = "Start Lorefold Studio"
+description = "Start Lorekind Studio"
 
 [tasks.check]
 run = "pnpm check"
@@ -23,4 +23,4 @@ description = "Run unit tests"
 
 [tasks.build]
 run = "pnpm build"
-description = "Build Lorefold Studio"
+description = "Build Lorekind Studio"

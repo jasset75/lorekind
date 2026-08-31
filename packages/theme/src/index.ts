@@ -8,7 +8,7 @@ export interface FoldAppearance {
   readonly density?: "comfortable" | "compact";
 }
 
-export const themeStorageKey = "lorefold-theme";
+export const themeStorageKey = "lorekind-theme";
 
 export function resolveTheme(mode: ThemeMode, prefersDark: boolean): Exclude<ThemeMode, "system"> {
   return mode === "system" ? (prefersDark ? "dark" : "light") : mode;

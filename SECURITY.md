@@ -1,6 +1,6 @@
 # Security policy
 
-Lorefold is not production-ready. No release is currently covered by a stable
+Lorekind is not production-ready. No release is currently covered by a stable
 security-support promise.
 
 ## Reporting a vulnerability

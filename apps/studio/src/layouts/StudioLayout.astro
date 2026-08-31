@@ -1,5 +1,5 @@
 ---
-import "@lorefold/theme/tokens.css";
+import "@lorekind/theme/tokens.css";
 import "../styles/global.css";
 
 interface Props {
@@ -20,7 +20,7 @@ const { title, description } = Astro.props;
     <title>{title}</title>
     <script is:inline>
       (() => {
-        const stored = localStorage.getItem("lorefold-theme") ?? "system";
+        const stored = localStorage.getItem("lorekind-theme") ?? "system";
         const resolved =
           stored === "system"
             ? matchMedia("(prefers-color-scheme: dark)").matches

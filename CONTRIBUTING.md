@@ -1,6 +1,6 @@
-# Contributing to Lorefold
+# Contributing to Lorekind
 
-Lorefold welcomes design, documentation, testing, and code contributions. The
+Lorekind welcomes design, documentation, testing, and code contributions. The
 project is in its foundation stage, so proposals that clarify boundaries are as
 valuable as implementation work.
 
@@ -8,7 +8,7 @@ valuable as implementation work.
 
 1. Search existing issues and discussions.
 2. Open an issue before making a large architectural or public-API change.
-3. Keep deployment-specific behavior outside generic Lorefold packages.
+3. Keep deployment-specific behavior outside generic Lorekind packages.
 4. Add tests for authorization and provider behavior.
 5. Run `mise run check` from the repository root.
 

@@ -62,10 +62,10 @@ importers:
       '@astrojs/svelte':
         specifier: 9.0.1
         version: 9.0.1(@types/node@26.1.2)(astro@7.2.6(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(@types/node@26.1.2)(yaml@2.9.0))(esbuild@0.28.2)(svelte@5.56.10(@typescript-eslint/types@8.68.0))(typescript@6.0.2)(yaml@2.9.0)
-      '@lorefold/core':
+      '@lorekind/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@lorefold/theme':
+      '@lorekind/theme':
         specifier: workspace:*
         version: link:../../packages/theme
       astro:
