@@ -23,7 +23,7 @@ what is real versus planned.
 - Create, edit, validate, and submit a draft through Studio.
 - Generate a deterministic change set without remote credentials.
 - Display a human-readable diff and audit event.
-- Enforce separation between contribution and approval.
+- Exercise configurable direct-publication and independent-review policies.
 - Test light, dark, system, and high-contrast theme modes.
 
 Exit: a contributor can complete the workflow locally using an in-memory or
