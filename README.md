@@ -58,8 +58,14 @@ mise run check
 
 ## Roadmap
 
-See [ROADMAP.md](./ROADMAP.md). The first milestone validates the product
-contracts and a local Studio workflow before connecting to a real Git provider.
+See [ROADMAP.md](./ROADMAP.md). The planned increments validate shared editorial
+contracts locally, deliver a portable API with remote GitLab persistence, add AI
+clients, and prove provider portability with GitHub. The basic workflow must
+require neither an additional CMS database nor a backend Git checkout. These are
+planned capabilities; the current implementation remains a foundation scaffold.
+
+[ADR 0004](docs/architecture/0004-portable-editorial-backend.md) records the
+runtime, persistence, and client boundaries.
 
 ## Contributing and security
 
