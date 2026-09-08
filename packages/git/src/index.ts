@@ -42,3 +42,5 @@ export interface GitProvider {
   submitChange(input: SubmitChangeInput): Promise<ChangeRequest>;
   getChangeRequest(repository: RepositoryRef, id: string): Promise<ChangeRequest>;
 }
+
+export * from "./editorial";

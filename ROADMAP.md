@@ -10,6 +10,12 @@ architecture and supersedes the GitHub-first adapter sequence in ADR 0002.
 GitHub remains the public product upstream; GitLab becomes the first remote
 content implementation, followed by GitHub against the same contracts.
 
+Implementation update: the first local domain increment now provides pure
+editorial transitions, revision-bound approvals, scoped authorization and
+experimental persistence contracts. [ADR 0005](docs/architecture/0005-experimental-editorial-domain.md)
+records its limits. Phase 1A remains open until remote feasibility, trusted record
+loading and the remaining compatibility/recovery contracts are resolved.
+
 ## Design constraints across milestones
 
 - Keep editorial semantics, provider operations, and runtime integration separate.

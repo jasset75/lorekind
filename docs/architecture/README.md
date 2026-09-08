@@ -15,3 +15,5 @@ and an explicit status.
 - [0004: Portable editorial backend with remote Git persistence](./0004-portable-editorial-backend.md):
   planned shared API/client operations, database-free baseline, and updated
   provider implementation order.
+- [0005: Experimental editorial transitions and revision-bound authorization](./0005-experimental-editorial-domain.md):
+  first executable domain increment, experimental persistence contracts and remaining proof.

@@ -9,6 +9,12 @@ repository access.
 > Status: foundation scaffold. The Studio is a visual prototype and the APIs are
 > not ready for production use.
 
+Core now includes experimental, unit-tested editorial transitions for direct and
+independent publication policies, scoped grants and delegated actors. Persistence,
+trusted runtime input loading and the HTTP API remain unimplemented. See
+[ADR 0005](docs/architecture/0005-experimental-editorial-domain.md) for the exact
+trust boundary and remaining provider proof.
+
 ## Core idea
 
 A **Fold** is an independently governed editorial space. It groups content,
