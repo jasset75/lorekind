@@ -4,7 +4,7 @@ This roadmap records product outcomes rather than calendar promises. Each phase
 must preserve the security boundary: the browser is a client, never the final
 authorization authority.
 
-The 2026-09-08 increments below are planned work, not implemented capabilities.
+The phases below mix delivered increments and open work, indicated explicitly.
 [ADR 0004](docs/architecture/0004-portable-editorial-backend.md) defines their
 architecture and supersedes the GitHub-first adapter sequence in ADR 0002.
 GitHub remains the public product upstream; GitLab becomes the first remote
@@ -15,6 +15,59 @@ editorial transitions, revision-bound approvals, scoped authorization and
 experimental persistence contracts. [ADR 0005](docs/architecture/0005-experimental-editorial-domain.md)
 records its limits. Phase 1A remains open until remote feasibility, trusted record
 loading and the remaining compatibility/recovery contracts are resolved.
+
+The local MVP now connects Studio at `/`, shared application operations and
+isolated file snapshots, including validation, diff, independent review and local
+application. [ADR 0010](docs/architecture/0010-evolving-product-mvp.md) makes this
+the product entry point and supersedes the separate evaluation UI framing in
+ADR 0006. This advances 1B without closing remote feasibility
+or claiming the shared remote provider conformance suite is complete.
+
+API increment: `/api/v1` now exposes authenticated resource routes and an OpenAPI
+contract over the local application layer, with durable proposal IDs, history and
+operation receipts. [ADR 0007](docs/architecture/0007-versioned-editorial-api.md)
+records the experimental scope. Hosted identity/runtime integration and remote
+GitLab guarantees remain open; Phase 2A/2B are not marked complete.
+
+HTTP stack implementation: [ADR 0008](docs/architecture/0008-portable-http-stack.md)
+now uses Hono, Zod and generated OpenAPI. Shared contract scenarios pass on Node
+and a Workers harness without Node compatibility or dynamic function compilation.
+The development server retains local persistence; hosted identity and remote Git
+guarantees remain pending.
+
+## Delivery model: one evolving MVP
+
+The local release is Lorekind, not a pilot to be replaced by a second product.
+Iterate through integrated user outcomes on the same Core, Studio and HTTP
+boundaries. The current release includes create/save, validation, diff, submit,
+independent review, local application, history, restart recovery and EN/ES
+presentation. It does not include real browser identity, remote Git persistence,
+a hosted backend or multiple entries per workspace. Local identities and local
+application are labelled in the product, not hidden behind an evaluation URL.
+
+### Ordered backlog
+
+| Priority               | Increment                                                                                                | Dependencies                                                                           | Verifiable acceptance                                                                                                                            | Main risk                                                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| P0 — delivered locally | Make `/` the working Studio, remove fake dashboard activity, remove unpublished routes without redirects | Existing shared application and file store                                             | Save → submit → approve → apply from Studio; saved work survives restart; removed routes return 404; no invented metrics                         | Mistaking local mode for a hosted deployment                               |
+| P0 — next              | Connect Studio to `/api/v1` with verified browser identity                                               | Choose trusted identity/session integration and protected Fold configuration           | Two real principals complete the same workflow; no browser-selected authority; no bundled bearer secrets; revocation and CSRF/session tests pass | Privilege escalation or unsafe merging of simulated and authenticated data |
+| P1                     | Deliver the same workflow using GitLab persistence                                                       | P0 identity, safe record loading, conditional-write and provider conformance contracts | Recover interrupted remote operations; concurrent retries cannot overwrite other work; approvals bind to the delivered revision                  | Remote race conditions and partial failure                                 |
+| P1                     | Add multiple entries and durable Fold/resource navigation                                                | Defined IDs, schema/listing contracts and the shared API client                        | Create, reopen, review and navigate distinct entries without losing unsaved work or crossing authorization scopes                                | URL changes and data migration                                             |
+| P2                     | Enable CLI/MCP clients on the same saved proposals                                                       | Trusted identity, delegated grants and shared API                                      | An agent submits, a human reviews, and both see the same durable proposal                                                                        | Agent attribution and excessive permissions                                |
+| P2                     | Prove GitHub provider portability                                                                        | GitLab conformance suite and exportable records                                        | Same acceptance workflow and recovery suite on both providers                                                                                    | Provider-specific assumptions leaking into Core                            |
+| P3                     | Rich editing, assets and extension ecosystem                                                             | Stable client/provider contracts and accessibility baseline                            | Features ship end-to-end with migration and security guidance                                                                                    | Expanding features before workflow reliability                             |
+
+### Definition of done for each increment
+
+- A user-facing outcome is reachable from Studio, not a disconnected demo route.
+- Displayed content, state and activity come from real persisted records; test
+  fixtures are isolated and never presented as product activity.
+- Server-side authority, validation, conflicts and retry behavior are verified.
+- Existing data and configuration keep working, or an explicit, tested migration
+  is provided. Never silently combine simulated and authenticated stores.
+- EN/ES copy and accessible keyboard/focus behavior cover the new surface.
+- `pnpm check` and relevant real HTTP/browser acceptance checks pass; documentation
+  states what is delivered, limited and pending. Local completion is not deployment.
 
 ## Design constraints across milestones
 
@@ -46,7 +99,7 @@ loading and the remaining compatibility/recovery contracts are resolved.
 Exit: the repository builds from a clean checkout and its contracts describe
 what is real versus planned.
 
-## Phase 1 — Local editorial vertical slice
+## Phase 1 — Local editorial MVP
 
 ### 1A — Editorial and provider contracts
 
@@ -68,20 +121,24 @@ what is real versus planned.
 Exit: reviewed contracts and threat model describe a complete save-to-review
 workflow without referring to a specific runtime or Git host.
 
-### 1B — Executable local contract example
+### 1B — Working Studio increment
 
-- [ ] Persist a test Fold definition and content schema with an in-memory or
-      filesystem provider; use this as a test harness, not hosted Git storage.
-- [ ] Create, edit, validate, and submit an article draft through Studio.
-- [ ] Generate a deterministic change set, readable diff, and attribution record
-      without remote credentials; exercise direct publication and independent review.
+- [x] Load a trusted profile and persist local content, proposals, approvals and
+      history in the file adapter; this does not claim hosted Git storage.
+- [x] Create, edit, validate, and submit an article draft through Studio at `/`.
+- [x] Show the saved diff and complete independent review and local application,
+      retaining saved work across restarts.
+- [x] Expose bilingual product UI with explicit local-mode limitations and no
+      fabricated dashboard metrics or activity.
+- [ ] Expose direct-policy controls in Studio (Core/API support is already tested).
 - [ ] Add a reusable provider conformance suite covering conditional writes,
       concurrent requests, retries, partial failure, and review invalidation.
 - [ ] Test keyboard navigation, zoom, reduced motion, and light, dark, system,
       and high-contrast theme modes.
 
-Exit: a contributor can complete the workflow locally using an in-memory or
-filesystem test provider. The example has no consumer-specific catalogue types.
+Exit: a user can complete the workflow from the product entry point using the
+local adapter, with the remaining policy/accessibility criteria above verified.
+Core has no consumer-specific catalogue types. Remote persistence is a later adapter.
 
 ## Phase 2 — Hosted editorial workflow with GitLab
 
@@ -92,6 +149,9 @@ filesystem test provider. The example has no consumer-specific catalogue types.
       HTTP API and shared application layer.
 - [ ] Provide an OpenAPI description and request/response contract tests. Keep
       framework and runtime bindings outside editorial and provider packages.
+- [x] Migrate the manual HTTP boundary to Hono and Zod with generated OpenAPI
+      per ADR 0008; verify equivalent contracts on Node and a restrictive Workers
+      runtime configuration, including transitive dependencies and schema execution.
 - [ ] Add a Cloudflare Workers deployment adapter as one execution option;
       exercise the application layer outside that runtime as well.
 - [ ] Integrate trusted identity and protected server configuration through

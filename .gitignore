@@ -6,6 +6,7 @@ dist/
 .env.*
 !.env.example
 coverage/
+.evaluation/
 
 # Local implementation notes
 /docs/implementation-plan-2026-09-08.md

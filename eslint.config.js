@@ -17,6 +17,9 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         document: "readonly",
+        fetch: "readonly",
+        structuredClone: "readonly",
+        crypto: "readonly",
         localStorage: "readonly",
         matchMedia: "readonly",
       },

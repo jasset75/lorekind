@@ -1,4 +1,5 @@
 export const capabilities = [
+  "entry:read",
   "entry:create",
   "entry:edit-own",
   "entry:dismiss",
@@ -75,9 +76,16 @@ export type AuthorizationDecision =
     };
 
 export const roleCapabilities: Readonly<Record<FoldRole, readonly Capability[]>> = {
-  creator: ["entry:create", "entry:edit-own", "entry:submit"],
-  curator: ["entry:create", "entry:edit-own", "entry:submit", "entry:review", "entry:dismiss"],
-  publisher: ["entry:review", "entry:publish"],
+  creator: ["entry:read", "entry:create", "entry:edit-own", "entry:submit"],
+  curator: [
+    "entry:read",
+    "entry:create",
+    "entry:edit-own",
+    "entry:submit",
+    "entry:review",
+    "entry:dismiss",
+  ],
+  publisher: ["entry:read", "entry:review", "entry:publish"],
   admin: capabilities,
 };
 

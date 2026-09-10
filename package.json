@@ -17,7 +17,11 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test": "vitest run",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "test:api": "node scripts/api-smoke.mjs",
+    "test:api:portability": "vitest run apps/studio/src/server/api-portability.test.ts",
+    "openapi:generate": "node scripts/openapi.mjs",
+    "openapi:check": "node scripts/openapi.mjs --check",
+    "check": "pnpm openapi:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
@@ -25,10 +29,13 @@
     "@emnapi/runtime": "1.11.3",
     "@eslint/js": "10.0.1",
     "@types/node": "26.1.2",
+    "ajv": "8.20.0",
+    "esbuild": "0.28.2",
     "eslint": "10.0.1",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-astro": "3.1.0",
     "eslint-plugin-svelte": "3.23.0",
+    "miniflare": "4.20260730.0",
     "prettier": "3.9.0",
     "prettier-plugin-astro": "0.14.1",
     "prettier-plugin-svelte": "3.4.1",

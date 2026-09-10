@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@astrojs/svelte": "9.0.1",
+    "@hono/zod-openapi": "1.6.3",
     "@lorekind/core": "workspace:*",
     "@lorekind/theme": "workspace:*",
     "astro": "7.2.6",
-    "svelte": "5.56.10"
+    "hono": "4.13.7",
+    "svelte": "5.56.10",
+    "zod": "4.5.4"
   }
 }

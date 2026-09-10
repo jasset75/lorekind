@@ -1,17 +1,19 @@
 ---
 import "@lorekind/theme/tokens.css";
 import "../styles/global.css";
+import { translate } from "../i18n";
 
 interface Props {
   title: string;
   description: string;
+  lang?: "en" | "es";
 }
 
-const { title, description } = Astro.props;
+const { title, description, lang = "en" } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
@@ -32,7 +34,7 @@ const { title, description } = Astro.props;
     </script>
   </head>
   <body>
-    <a class="skip-link" href="#workspace">Skip to workspace</a>
+    <a class="skip-link" href="#workspace">{translate(lang, "ui.skip")}</a>
     <slot />
   </body>
 </html>

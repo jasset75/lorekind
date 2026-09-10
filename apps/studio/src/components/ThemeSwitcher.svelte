@@ -1,9 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { translate } from "../i18n";
+  import type { Locale } from "../i18n";
+  import type { MessageKey } from "../i18n/catalogs";
+  let { language = "en" }: { language?: Locale } = $props();
+  const t = (key: MessageKey) => translate(language, key);
 
   type ThemeMode = "light" | "dark" | "system" | "high-contrast";
 
-  let mode: ThemeMode = "system";
+  let mode = $state<ThemeMode>("system");
 
   function resolvedTheme(value: ThemeMode): Exclude<ThemeMode, "system"> {
     if (value !== "system") return value;
@@ -32,12 +37,12 @@
 </script>
 
 <label class="theme-control">
-  <span>Theme</span>
+  <span>{t("ui.theme")}</span>
   <select value={mode} onchange={(event) => applyTheme(event.currentTarget.value as ThemeMode)}>
-    <option value="system">System</option>
-    <option value="light">Light</option>
-    <option value="dark">Dark</option>
-    <option value="high-contrast">High contrast</option>
+    <option value="system">{t("theme.system")}</option>
+    <option value="light">{t("theme.light")}</option>
+    <option value="dark">{t("theme.dark")}</option>
+    <option value="high-contrast">{t("theme.high-contrast")}</option>
   </select>
 </label>
 
