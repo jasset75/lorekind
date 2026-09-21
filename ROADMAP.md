@@ -35,6 +35,12 @@ and a Workers harness without Node compatibility or dynamic function compilation
 The development server retains local persistence; hosted identity and remote Git
 guarantees remain pending.
 
+An optional browser API boundary now verifies Cloudflare Access assertions behind
+a replaceable identity interface, checks request origins, and resolves principal
+mapping and grants per request. Synthetic signed-token workflow tests cover this
+increment. Studio still uses the local simulator: real login, the Studio API
+client and hosted runtime binding remain open; the P0 outcome below is not closed.
+
 ## Delivery model: one evolving MVP
 
 The local release is Lorekind, not a pilot to be replaced by a second product.
