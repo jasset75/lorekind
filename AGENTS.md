@@ -1,5 +1,13 @@
 # Lorekind contributor instructions
 
+## Contribution workflow
+
+Use the [pull-request-contributions skill](.agents/skills/pull-request-contributions/SKILL.md)
+when implementing, preparing, reviewing, or merging changes. Work on feature
+branches, keep PRs small, inspect English public-facing prose and outgoing history
+before publication, and integrate authorized changes through squash PRs to `main`.
+The skill includes a size checker; it does not install Git hooks or GitHub rules.
+
 ## Product boundary
 
 - Lorekind is a framework-agnostic, Git-native CMS.

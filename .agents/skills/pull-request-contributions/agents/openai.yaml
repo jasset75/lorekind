@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pull Request Contributions"
+  short_description: "Small PRs, publication review, and squash workflow"
+  default_prompt: "Use $pull-request-contributions to prepare a focused Lorekind change or review a third-party PR against the contribution rules."

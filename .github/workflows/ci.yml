@@ -19,4 +19,5 @@ jobs:
           cache: true
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - run: python3 .agents/skills/pull-request-contributions/scripts/test_check_pr_size.py
       - run: pnpm test:api
