@@ -1,6 +1,9 @@
 import { createRemoteJWKSet, errors, jwtVerify } from "jose";
 import type { BrowserIdentityProvider } from "./browser-api";
 
+// Application guard before JWT parsing; not a Cloudflare-specified token limit.
+const MAX_ACCESS_TOKEN_LENGTH = 16 * 1024;
+
 /** Optional deployment adapter; Core and the browser boundary have no Access dependency. */
 export function cloudflareAccessIdentity(config: {
   issuer: string;
@@ -17,7 +20,8 @@ export function cloudflareAccessIdentity(config: {
   return {
     async verify(request) {
       const token = request.headers.get("cf-access-jwt-assertion");
-      if (!token || token.length > 16384) return null;
+      // TODO: report oversized-token rejection through telemetry (https://github.com/jasset75/lorekind/issues/6).
+      if (!token || token.length > MAX_ACCESS_TOKEN_LENGTH) return null;
       try {
         const { payload } = await jwtVerify(token, keys, {
           issuer: config.issuer,
