@@ -9,7 +9,7 @@ import sys
 import tempfile
 import unittest
 
-CHECKER = Path(__file__).with_name("check_pr_size.py").resolve()
+CHECKER = Path(__file__).resolve().parents[1] / "scripts" / "check_pr_size.py"
 
 
 class SizeGateTests(unittest.TestCase):
