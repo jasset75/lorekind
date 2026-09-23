@@ -154,5 +154,5 @@ The checker measures size only. It does not approve language, confidentiality,
 scope, or licensing, and it does not enforce GitHub permissions. To test it, run:
 
 ```sh
-python3 .agents/skills/pull-request-contributions/scripts/test_check_pr_size.py
+python3 .agents/skills/pull-request-contributions/tests/test_check_pr_size.py
 ```
