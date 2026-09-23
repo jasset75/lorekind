@@ -35,6 +35,12 @@ and a Workers harness without Node compatibility or dynamic function compilation
 The development server retains local persistence; hosted identity and remote Git
 guarantees remain pending.
 
+An optional browser API boundary now verifies Cloudflare Access assertions behind
+a replaceable identity interface, checks request origins, and resolves principal
+mapping and grants per request. Synthetic signed-token workflow tests cover this
+increment. Studio still uses the local simulator: real login, the Studio API
+client and hosted runtime binding remain open; the P0 outcome below is not closed.
+
 ## Delivery model: one evolving MVP
 
 The local release is Lorekind, not a pilot to be replaced by a second product.
@@ -56,6 +62,13 @@ application are labelled in the product, not hidden behind an evaluation URL.
 | P2                     | Enable CLI/MCP clients on the same saved proposals                                                       | Trusted identity, delegated grants and shared API                                      | An agent submits, a human reviews, and both see the same durable proposal                                                                        | Agent attribution and excessive permissions                                |
 | P2                     | Prove GitHub provider portability                                                                        | GitLab conformance suite and exportable records                                        | Same acceptance workflow and recovery suite on both providers                                                                                    | Provider-specific assumptions leaking into Core                            |
 | P3                     | Rich editing, assets and extension ecosystem                                                             | Stable client/provider contracts and accessibility baseline                            | Features ship end-to-end with migration and security guidance                                                                                    | Expanding features before workflow reliability                             |
+
+### Operational telemetry — pending
+
+[Provider-neutral telemetry hooks (#6)](https://github.com/jasset75/lorekind/issues/6)
+will define a minimal injectable contract for authentication outcomes and API
+errors, with a no-op default, sensitive-data exclusions and failure isolation.
+The contract is not implemented; backend selection and dashboards are separate work.
 
 ### Definition of done for each increment
 
