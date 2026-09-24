@@ -10,6 +10,10 @@ import { createRoute, z } from "@hono/zod-openapi";
 // Set before constructing schemas: Workers/CSP must not probe or use new Function.
 z.config({ jitless: true });
 
+export const ApiOperationStatus = { Completed: "completed" } as const;
+export type ApiOperationStatus = (typeof ApiOperationStatus)[keyof typeof ApiOperationStatus];
+export const ValidationAuthority = { Server: "server-authoritative" } as const;
+
 export const MAX_API_BODY = 131072;
 export const actions = [
   EditorialAction.Submit,
@@ -101,7 +105,7 @@ export const responses = {
         z.strictObject({
           id: z.string(),
           revision: z.string(),
-          validation: z.literal("server-authoritative"),
+          validation: z.literal(ValidationAuthority.Server),
           editableFields: z.array(
             z.strictObject({
               key: z.string(),
@@ -166,10 +170,18 @@ export const responses = {
     })
     .openapi("History"),
   mutation: z
-    .strictObject({ operationId: z.string(), status: z.literal("completed"), result: receipt })
+    .strictObject({
+      operationId: z.string(),
+      status: z.literal(ApiOperationStatus.Completed),
+      result: receipt,
+    })
     .openapi("Mutation"),
   operation: z
-    .strictObject({ id: z.string(), status: z.literal("completed"), result: receipt })
+    .strictObject({
+      id: z.string(),
+      status: z.literal(ApiOperationStatus.Completed),
+      result: receipt,
+    })
     .openapi("Operation"),
 };
 
