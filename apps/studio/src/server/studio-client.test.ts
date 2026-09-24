@@ -40,7 +40,7 @@ beforeEach(async () => {
       ...(revoked ? { grants: [] } : {}),
     }),
   });
-  client = editorialClient(async (input, init = {}) => {
+  client = editorialClient("/api/v1", async (input, init = {}) => {
     const path = String(input);
     sent.push({ path, init });
     const headers = new Headers(init.headers);
@@ -120,4 +120,29 @@ it("fails closed on logout, revocation and changed identity before a retry", asy
 it("does not assemble a writable view from different revisions", async () => {
   mixedRevision = true;
   await expect(client.load()).rejects.toMatchObject({ code: "conflict" });
+});
+
+it("uses the injected version for reads and mutations", async () => {
+  const paths: string[] = [];
+  const alternate = editorialClient("/api/v2", async (input) => {
+    paths.push(String(input));
+    return Response.json({ principalId: "author", folds: [] });
+  });
+  await alternate.execute({
+    action: "save",
+    key: "test",
+    expectedRevision: 0,
+    target: { principalId: "author", foldId: "article" },
+    content: {},
+  });
+  expect(paths).toEqual(["/api/v2/me", "/api/v2/folds/article/proposals"]);
+});
+it.each([
+  "https://other.test/api/v1",
+  "//other.test/api/v1",
+  "/api/../v1",
+  "/api/v1?x=1",
+  "/api/v1/",
+])("rejects an unsafe or ambiguous API base: %s", (base) => {
+  expect(() => editorialClient(base)).toThrow("API base path");
 });

@@ -110,7 +110,10 @@ recovery and idempotent publication. It also verifies simulator/API separation.
 ### Studio browser client
 
 Build or serve Studio with `LOREKIND_STUDIO_MODE=api` to use the same-origin
-`/api/v1` routes. The default remains local simulation. API mode removes the actor
+`/api/v1` routes. `LOREKIND_STUDIO_API_BASE_PATH` overrides this path at build
+time; Studio injects it into the client. Only absolute same-origin paths without
+a trailing slash are accepted. Changing the path does not make this client
+compatible with a different API contract. The default remains local simulation. API mode removes the actor
 selector and uses `/me` for identity and capability hints; the server remains
 authoritative for every operation. It never falls back to the simulator.
 

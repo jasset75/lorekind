@@ -21,11 +21,17 @@ export class StudioApiError extends Error {
 }
 
 /** Same-origin browser client; identity and credentials are supplied by the host session. */
-export function editorialClient(send: typeof fetch = fetch, language = () => "en") {
+export function editorialClient(
+  basePath: string,
+  send: typeof fetch = fetch,
+  language = () => "en",
+) {
+  if (!/^\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+$/.test(basePath))
+    throw new Error("API base path must be an absolute same-origin path without a trailing slash");
   async function request(path: string, init: RequestInit = {}) {
     const headers = new Headers(init.headers);
     headers.set("Accept-Language", language());
-    return send(`/api/v1${path}`, {
+    return send(`${basePath}${path}`, {
       ...init,
       headers,
       credentials: "same-origin",

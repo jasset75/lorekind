@@ -3,6 +3,7 @@ import StudioWorkspace from "../components/StudioWorkspace.svelte";
 import StudioLayout from "../layouts/StudioLayout.astro";
 import { translate } from "../i18n";
 const language = "es";
+const apiBasePath = import.meta.env.LOREKIND_STUDIO_API_BASE_PATH ?? "/api/v1";
 const apiMode = import.meta.env.LOREKIND_STUDIO_MODE === "api";
 ---
 
@@ -11,5 +12,5 @@ const apiMode = import.meta.env.LOREKIND_STUDIO_MODE === "api";
   title={translate(language, "page.title")}
   description={translate(language, "page.description")}
 >
-  <StudioWorkspace initialLocale={language} {apiMode} client:load />
+  <StudioWorkspace initialLocale={language} {apiMode} {apiBasePath} client:load />
 </StudioLayout>

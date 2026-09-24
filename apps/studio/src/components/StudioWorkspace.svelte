@@ -7,9 +7,12 @@
   import { translate, label, errorMessage, issueMessage } from "../i18n";
   import type { Locale } from "../i18n";
   import type { MessageKey } from "../i18n/catalogs";
-  let { initialLocale = "es", apiMode = false }: { initialLocale?: Locale; apiMode?: boolean } =
-    $props();
-  const api = editorialClient(fetch, () => language);
+  let {
+    initialLocale = "es",
+    apiMode = false,
+    apiBasePath,
+  }: { initialLocale?: Locale; apiMode?: boolean; apiBasePath: string } = $props();
+  const api = $derived(editorialClient(apiBasePath, fetch, () => language));
   let language = $state<Locale>(initialLocale);
   const t = (key: MessageKey, params: ValidationIssue["params"] = {}) =>
     translate(language, key, params);
