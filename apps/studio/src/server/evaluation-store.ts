@@ -1,6 +1,6 @@
 import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import { dirname } from "node:path";
-import { EditorialErrorCode, EditorialError } from "@lorekind/core";
+import { ContributionState, EditorialErrorCode, EditorialError } from "@lorekind/core";
 import type { EvaluationStore, WorkspaceSnapshot } from "@lorekind/core";
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -65,15 +65,7 @@ export function decodeSnapshot(text: string): WorkspaceSnapshot {
       typeof item.authorPrincipalId !== "string" ||
       !Number.isSafeInteger(item.version) ||
       Number(item.version) < 0 ||
-      ![
-        "Draft",
-        "InReview",
-        "Approved",
-        "Dismissed",
-        "Publishing",
-        "Applied",
-        "PublicationFailed",
-      ].includes(String(item.state)) ||
+      !Object.values(ContributionState).some((state) => state === String(item.state)) ||
       item.intent !== "publish" ||
       !isObject(item.scope) ||
       !["contentRevision", "schemaRevision", "policyRevision", "targetRevision"].every(

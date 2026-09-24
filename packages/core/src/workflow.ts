@@ -1,5 +1,5 @@
 import { EditorialErrorCode } from "./errors";
-import { EditorialAction } from "./actions";
+import { EditorialAction, InternalEditorialAction } from "./actions";
 import { authorize, Capability } from "./authorization";
 import type { Delegation, FoldGrant, ReviewPolicy } from "./authorization";
 
@@ -13,6 +13,13 @@ export const ContributionState = {
   PublicationFailed: "PublicationFailed",
 } as const;
 export type ContributionState = (typeof ContributionState)[keyof typeof ContributionState];
+
+const editableStates: readonly ContributionState[] = [
+  ContributionState.Draft,
+  ContributionState.InReview,
+  ContributionState.Approved,
+  ContributionState.PublicationFailed,
+];
 
 export type CanonicalState = "Unpublished" | "Published" | "Withdrawn";
 
@@ -74,14 +81,14 @@ export type WorkflowCommand = {
         typeof EditorialAction.Save | typeof EditorialAction.Publish
       >;
     }
-  | { readonly action: "revise"; readonly contentRevision: string }
+  | { readonly action: typeof InternalEditorialAction.Revise; readonly contentRevision: string }
   | { readonly action: typeof EditorialAction.Publish; readonly attemptId: string }
 );
 
 export interface Transition {
   readonly contribution: Contribution;
   readonly audit: {
-    readonly action: WorkflowCommand["action"] | "create";
+    readonly action: WorkflowCommand["action"] | typeof InternalEditorialAction.Create;
     readonly identity: EditorialIdentity;
     readonly contributionId: string;
     readonly foldId: string;
@@ -228,7 +235,7 @@ export function createDraft(
     foldId: context.foldId,
     authorPrincipalId: context.principalId,
     intent: input.intent,
-    state: "Draft",
+    state: ContributionState.Draft,
     version: 0,
     scope,
     approvals: [],
@@ -236,7 +243,7 @@ export function createDraft(
   const identity = identityFor(contribution, context, Capability.EntryCreate);
   return identity === undefined
     ? { ok: false, error: EditorialErrorCode.Forbidden }
-    : success(contribution, "create", identity, context.now);
+    : success(contribution, InternalEditorialAction.Create, identity, context.now);
 }
 
 /** Pure decision. Persist the returned contribution and audit together using compare-and-swap. */
@@ -271,28 +278,28 @@ export function transitionContribution(
   let approvals = currentApprovals;
   let publicationAttemptId: string | undefined;
   switch (command.action) {
-    case "revise":
-      if (!["Draft", "InReview", "Approved", "PublicationFailed"].includes(state))
+    case InternalEditorialAction.Revise:
+      if (!editableStates.includes(state))
         return { ok: false, error: EditorialErrorCode.InvalidTransition };
       if (!command.contentRevision) return { ok: false, error: EditorialErrorCode.InvalidInput };
       scope = scopeFor(command.contentRevision, context);
       approvals = [];
-      state = "Draft";
+      state = ContributionState.Draft;
       break;
     case EditorialAction.Submit:
-      if (state !== "Draft" || context.policy.mode !== "independent")
+      if (state !== ContributionState.Draft || context.policy.mode !== "independent")
         return { ok: false, error: EditorialErrorCode.InvalidTransition };
       if (!sameScope(scope, currentScope))
         return { ok: false, error: EditorialErrorCode.StaleReview };
-      state = "InReview";
+      state = ContributionState.InReview;
       break;
     case EditorialAction.Approve:
     case EditorialAction.AuthorizeDirect: {
       const direct = command.action === EditorialAction.AuthorizeDirect;
       if (
         direct
-          ? state !== "Draft" || context.policy.mode !== "direct"
-          : state !== "InReview" || context.policy.mode !== "independent"
+          ? state !== ContributionState.Draft || context.policy.mode !== "direct"
+          : state !== ContributionState.InReview || context.policy.mode !== "independent"
       )
         return { ok: false, error: EditorialErrorCode.InvalidTransition };
       if (!sameScope(scope, currentScope))
@@ -301,11 +308,13 @@ export function transitionContribution(
         ...currentApprovals.filter((item) => item.identity.principalId !== identity.principalId),
         { kind: direct ? "direct" : "review", scope, identity },
       ];
-      state = hasApprovals(approvals, context.policy) ? "Approved" : "InReview";
+      state = hasApprovals(approvals, context.policy)
+        ? ContributionState.Approved
+        : ContributionState.InReview;
       break;
     }
     case EditorialAction.Publish:
-      if (state !== "Approved" && state !== "PublicationFailed")
+      if (state !== ContributionState.Approved && state !== ContributionState.PublicationFailed)
         return { ok: false, error: EditorialErrorCode.InvalidTransition };
       if (!sameScope(scope, currentScope))
         return { ok: false, error: EditorialErrorCode.StaleReview };
@@ -314,17 +323,18 @@ export function transitionContribution(
       if (!command.attemptId || command.attemptId === contribution.publicationAttemptId)
         return { ok: false, error: EditorialErrorCode.InvalidInput };
       publicationAttemptId = command.attemptId;
-      state = "Publishing";
+      state = ContributionState.Publishing;
       break;
     case EditorialAction.Dismiss:
-      if (!["Draft", "InReview", "Approved", "PublicationFailed"].includes(state))
+      if (!editableStates.includes(state))
         return { ok: false, error: EditorialErrorCode.InvalidTransition };
-      state = "Dismissed";
+      state = ContributionState.Dismissed;
       approvals = [];
       break;
     case EditorialAction.Restore:
-      if (state !== "Dismissed") return { ok: false, error: EditorialErrorCode.InvalidTransition };
-      state = "Draft";
+      if (state !== ContributionState.Dismissed)
+        return { ok: false, error: EditorialErrorCode.InvalidTransition };
+      state = ContributionState.Draft;
       approvals = [];
       scope = currentScope;
       break;
@@ -361,7 +371,7 @@ export function reconcilePublication(
   | { readonly ok: true; readonly contribution: Contribution }
   | { readonly ok: false; readonly error: typeof EditorialErrorCode.Conflict } {
   if (
-    contribution.state !== "Publishing" ||
+    contribution.state !== ContributionState.Publishing ||
     result.expectedVersion !== contribution.version ||
     result.attemptId !== contribution.publicationAttemptId ||
     !sameScope(result.scope, contribution.scope)
@@ -374,7 +384,10 @@ export function reconcilePublication(
         ? contribution
         : {
             ...contribution,
-            state: result.outcome === "applied" ? "Applied" : "PublicationFailed",
+            state:
+              result.outcome === "applied"
+                ? ContributionState.Applied
+                : ContributionState.PublicationFailed,
             version: contribution.version + 1,
           },
   };
