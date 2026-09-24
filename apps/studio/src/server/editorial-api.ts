@@ -23,6 +23,8 @@ import type {
   ValidationIssue,
 } from "@lorekind/core";
 import {
+  ApiOperationStatus,
+  ValidationAuthority,
   actionRoutes,
   allRoutes,
   MAX_API_BODY,
@@ -301,7 +303,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     c.header("ETag", `"v${receipt.revision}"`);
     return responses.mutation.parse({
       operationId: operation,
-      status: "completed",
+      status: ApiOperationStatus.Completed,
       result: receipt,
     });
   }
@@ -354,7 +356,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
               ...field,
               label: label(locale(c.get("language")), field.labelKey, field.label),
             })),
-            validation: "server-authoritative",
+            validation: ValidationAuthority.Server,
           },
         ],
       }),
@@ -486,7 +488,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
           return c.json(
             responses.operation.parse({
               id: c.req.valid("param").operationId,
-              status: "completed",
+              status: ApiOperationStatus.Completed,
               result: operation.receipt,
             }),
             200,

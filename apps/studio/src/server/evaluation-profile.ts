@@ -1,5 +1,10 @@
 import type { ContentProfile, ValidationIssue } from "@lorekind/core";
 
+const ArticleValidationCode = {
+  UnknownFields: "unknown-fields",
+  TextLength: "text-length",
+} as const;
+
 export const articleProfile: ContentProfile = {
   id: "article-example",
   title: "Article · generic example",
@@ -16,11 +21,19 @@ export const articleProfile: ContentProfile = {
   validate(content) {
     const errors: ValidationIssue[] = [];
     if (Object.keys(content).some((key) => !["title", "body"].includes(key)))
-      errors.push({ code: "unknown-fields", path: [], params: {} });
+      errors.push({ code: ArticleValidationCode.UnknownFields, path: [], params: {} });
     if (typeof content.title !== "string" || !content.title.trim() || content.title.length > 200)
-      errors.push({ code: "text-length", path: ["title"], params: { min: 1, max: 200 } });
+      errors.push({
+        code: ArticleValidationCode.TextLength,
+        path: ["title"],
+        params: { min: 1, max: 200 },
+      });
     if (typeof content.body !== "string" || !content.body.trim() || content.body.length > 10000)
-      errors.push({ code: "text-length", path: ["body"], params: { min: 1, max: 10000 } });
+      errors.push({
+        code: ArticleValidationCode.TextLength,
+        path: ["body"],
+        params: { min: 1, max: 10000 },
+      });
     return errors;
   },
 };
