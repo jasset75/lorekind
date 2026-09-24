@@ -1,3 +1,4 @@
+import { Locale } from "../i18n";
 // Build-time entry only. Requests serve the checked-in artifact via openapi.ts.
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { allRoutes, openapiConfig } from "./api-contract";
@@ -34,7 +35,7 @@ export function generateOpenApi() {
           "Content-Language": {
             description:
               "Resolved presentation locale. Host-level rejections may omit localization headers.",
-            schema: { type: "string", enum: ["en", "es"] },
+            schema: { type: "string", enum: [Locale.English, Locale.Spanish] },
           },
           Vary: {
             description: "Responses from the portable handler vary by Accept-Language.",

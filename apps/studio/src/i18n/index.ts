@@ -2,10 +2,11 @@ import type { ValidationIssue } from "@lorekind/core";
 import { en, es } from "./catalogs";
 import type { MessageKey } from "./catalogs";
 
-export type Locale = "en" | "es";
-export const catalogs = { en, es };
+export const Locale = { English: "en", Spanish: "es" } as const;
+export type Locale = (typeof Locale)[keyof typeof Locale];
+export const catalogs = { [Locale.English]: en, [Locale.Spanish]: es };
 export function locale(value: string): Locale {
-  return value === "es" ? "es" : "en";
+  return value === Locale.Spanish ? Locale.Spanish : Locale.English;
 }
 export function translate(
   language: Locale,

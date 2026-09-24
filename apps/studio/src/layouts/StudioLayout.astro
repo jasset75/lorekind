@@ -1,15 +1,16 @@
 ---
 import "@lorekind/theme/tokens.css";
 import "../styles/global.css";
-import { translate } from "../i18n";
+import { ThemeMode, themeStorageKey } from "@lorekind/theme";
+import { translate, Locale } from "../i18n";
 
 interface Props {
   title: string;
   description: string;
-  lang?: "en" | "es";
+  lang?: Locale;
 }
 
-const { title, description, lang = "en" } = Astro.props;
+const { title, description, lang = Locale.English } = Astro.props;
 ---
 
 <!doctype html>
@@ -20,14 +21,14 @@ const { title, description, lang = "en" } = Astro.props;
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    <script is:inline>
+    <script is:inline define:vars={{ ThemeMode, themeStorageKey }}>
       (() => {
-        const stored = localStorage.getItem("lorekind-theme") ?? "system";
+        const stored = localStorage.getItem(themeStorageKey) ?? ThemeMode.System;
         const resolved =
-          stored === "system"
+          stored === ThemeMode.System
             ? matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light"
+              ? ThemeMode.Dark
+              : ThemeMode.Light
             : stored;
         document.documentElement.dataset.theme = resolved;
       })();

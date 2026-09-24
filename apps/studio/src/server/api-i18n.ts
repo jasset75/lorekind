@@ -1,11 +1,11 @@
 import type { z } from "@hono/zod-openapi";
 import en from "zod/v4/locales/en.js";
 import es from "zod/v4/locales/es.js";
-import type { ValidationIssue } from "@lorekind/core";
-import type { Locale } from "../i18n";
+import { EditorialErrorCode, type ValidationIssue } from "@lorekind/core";
+import { Locale } from "../i18n";
 import { errorMessage } from "../i18n";
 
-const errorMaps = { en: en().localeError, es: es().localeError };
+const errorMaps = { [Locale.English]: en().localeError, [Locale.Spanish]: es().localeError };
 /** Format at the request boundary. Never mutate Zod's global locale or expose input. */
 export function zodIssues(issues: readonly z.core.$ZodIssue[], language: Locale, source: unknown) {
   return issues.map((issue) => {
@@ -35,7 +35,7 @@ export function zodIssues(issues: readonly z.core.$ZodIssue[], language: Locale,
       params,
       message:
         (typeof translated === "string" ? translated : translated?.message) ??
-        errorMessage(language, "invalid-input"),
+        errorMessage(language, EditorialErrorCode.InvalidInput),
     } satisfies ValidationIssue & { message: string };
   });
 }

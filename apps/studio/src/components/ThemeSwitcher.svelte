@@ -1,35 +1,37 @@
 <script lang="ts">
+  import { ThemeMode, themeStorageKey, resolveTheme } from "@lorekind/theme";
   import { onMount } from "svelte";
   import { translate } from "../i18n";
-  import type { Locale } from "../i18n";
+  import { Locale } from "../i18n";
   import type { MessageKey } from "../i18n/catalogs";
-  let { language = "en" }: { language?: Locale } = $props();
+  let { language = Locale.English }: { language?: Locale } = $props();
   const t = (key: MessageKey) => translate(language, key);
 
-  type ThemeMode = "light" | "dark" | "system" | "high-contrast";
+  let mode = $state<ThemeMode>(ThemeMode.System);
 
-  let mode = $state<ThemeMode>("system");
-
-  function resolvedTheme(value: ThemeMode): Exclude<ThemeMode, "system"> {
-    if (value !== "system") return value;
-    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  function resolvedTheme(value: ThemeMode): Exclude<ThemeMode, typeof ThemeMode.System> {
+    return resolveTheme(value, matchMedia("(prefers-color-scheme: dark)").matches);
   }
 
   function applyTheme(value: ThemeMode): void {
     mode = value;
-    localStorage.setItem("lorekind-theme", value);
+    localStorage.setItem(themeStorageKey, value);
     document.documentElement.dataset.theme = resolvedTheme(value);
   }
 
   onMount(() => {
-    const stored = localStorage.getItem("lorekind-theme");
-    if (stored === "light" || stored === "dark" || stored === "high-contrast") {
+    const stored = localStorage.getItem(themeStorageKey);
+    if (
+      stored === ThemeMode.Light ||
+      stored === ThemeMode.Dark ||
+      stored === ThemeMode.HighContrast
+    ) {
       mode = stored;
     }
 
     const media = matchMedia("(prefers-color-scheme: dark)");
     const syncSystemTheme = () => {
-      if (mode === "system") document.documentElement.dataset.theme = resolvedTheme(mode);
+      if (mode === ThemeMode.System) document.documentElement.dataset.theme = resolvedTheme(mode);
     };
     media.addEventListener("change", syncSystemTheme);
     return () => media.removeEventListener("change", syncSystemTheme);
@@ -39,10 +41,10 @@
 <label class="theme-control">
   <span>{t("ui.theme")}</span>
   <select value={mode} onchange={(event) => applyTheme(event.currentTarget.value as ThemeMode)}>
-    <option value="system">{t("theme.system")}</option>
-    <option value="light">{t("theme.light")}</option>
-    <option value="dark">{t("theme.dark")}</option>
-    <option value="high-contrast">{t("theme.high-contrast")}</option>
+    <option value={ThemeMode.System}>{t("theme.system")}</option>
+    <option value={ThemeMode.Light}>{t("theme.light")}</option>
+    <option value={ThemeMode.Dark}>{t("theme.dark")}</option>
+    <option value={ThemeMode.HighContrast}>{t("theme.high-contrast")}</option>
   </select>
 </label>
 

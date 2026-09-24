@@ -1,3 +1,4 @@
+import { Locale } from "../i18n";
 import { ApiErrorCode } from "../api-errors";
 import { EditorialErrorCode, ContributionState, EditorialAction, Capability } from "@lorekind/core";
 import type { z } from "zod";
@@ -37,7 +38,7 @@ export class StudioApiError extends Error {
 export function editorialClient(
   basePath: string,
   send: typeof fetch = fetch,
-  language = () => "en",
+  language: () => string = () => Locale.English,
 ) {
   if (!/^\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+$/.test(basePath))
     throw new Error("API base path must be an absolute same-origin path without a trailing slash");
