@@ -72,19 +72,24 @@ export interface AuthorizationRequest {
   readonly delegation?: Delegation;
 }
 
+export const AuthorizationDenialReason = {
+  GrantMissing: "grant-missing",
+  GrantExpired: "grant-expired",
+  GrantRevoked: "grant-revoked",
+  CapabilityMissing: "capability-missing",
+  ResourceDenied: "resource-denied",
+  SelfApproval: "self-approval",
+  DelegationDenied: "delegation-denied",
+  InvalidContext: "invalid-context",
+} as const;
+export type AuthorizationDenialReason =
+  (typeof AuthorizationDenialReason)[keyof typeof AuthorizationDenialReason];
+
 export type AuthorizationDecision =
   | { readonly allowed: true; readonly grantId: string }
   | {
       readonly allowed: false;
-      readonly reason:
-        | "grant-missing"
-        | "grant-expired"
-        | "grant-revoked"
-        | "capability-missing"
-        | "resource-denied"
-        | "self-approval"
-        | "delegation-denied"
-        | "invalid-context";
+      readonly reason: AuthorizationDenialReason;
     };
 
 export const roleCapabilities: Readonly<Record<FoldRole, readonly Capability[]>> = {
@@ -127,58 +132,65 @@ export function authorize(
   request: AuthorizationRequest,
 ): AuthorizationDecision {
   const now = request.now ?? new Date();
-  if (!Number.isFinite(now.getTime())) return { allowed: false, reason: "invalid-context" };
+  if (!Number.isFinite(now.getTime()))
+    return { allowed: false, reason: AuthorizationDenialReason.InvalidContext };
   const policy = request.policy ?? { mode: ReviewMode.Independent, requiredApprovals: 1 };
   if (
     policy.mode === ReviewMode.Independent &&
     (!Number.isSafeInteger(policy.requiredApprovals) || policy.requiredApprovals < 1)
   )
-    return { allowed: false, reason: "invalid-context" };
+    return { allowed: false, reason: AuthorizationDenialReason.InvalidContext };
 
   const candidates = grants.filter(
     (grant) => grant.principalId === request.principalId && grant.foldId === request.foldId,
   );
-  if (candidates.length === 0) return { allowed: false, reason: "grant-missing" };
+  if (candidates.length === 0)
+    return { allowed: false, reason: AuthorizationDenialReason.GrantMissing };
   const unrevoked = candidates.filter((grant) => grant.revokedAt === undefined);
-  if (unrevoked.length === 0) return { allowed: false, reason: "grant-revoked" };
+  if (unrevoked.length === 0)
+    return { allowed: false, reason: AuthorizationDenialReason.GrantRevoked };
   const active = unrevoked.filter(
     (grant) => grant.expiresAt === undefined || grant.expiresAt.getTime() > now.getTime(),
   );
-  if (active.length === 0) return { allowed: false, reason: "grant-expired" };
+  if (active.length === 0)
+    return { allowed: false, reason: AuthorizationDenialReason.GrantExpired };
   const capable = active.filter((grant) => grant.capabilities.includes(request.capability));
-  if (capable.length === 0) return { allowed: false, reason: "capability-missing" };
+  if (capable.length === 0)
+    return { allowed: false, reason: AuthorizationDenialReason.CapabilityMissing };
   const grant = capable.find(
     (candidate) =>
       candidate.resourceIds === undefined ||
       (request.resourceId !== undefined && candidate.resourceIds.includes(request.resourceId)),
   );
-  if (grant === undefined) return { allowed: false, reason: "resource-denied" };
+  if (grant === undefined)
+    return { allowed: false, reason: AuthorizationDenialReason.ResourceDenied };
 
   if (
     request.capability === Capability.EntrySubmit &&
     request.contribution !== undefined &&
     request.contribution.authorPrincipalId !== request.principalId
   ) {
-    return { allowed: false, reason: "resource-denied" };
+    return { allowed: false, reason: AuthorizationDenialReason.ResourceDenied };
   }
   if (
     request.capability === Capability.EntryEditOwn &&
     request.contribution?.authorPrincipalId !== request.principalId
   ) {
-    return { allowed: false, reason: "resource-denied" };
+    return { allowed: false, reason: AuthorizationDenialReason.ResourceDenied };
   }
   if (
     request.capability === Capability.EntryReview ||
     request.capability === Capability.EntryPublish
   ) {
-    if (request.contribution === undefined) return { allowed: false, reason: "invalid-context" };
+    if (request.contribution === undefined)
+      return { allowed: false, reason: AuthorizationDenialReason.InvalidContext };
     // Publishing is allowed after independent approvals; the publisher need not be a reviewer.
     if (
       request.capability === Capability.EntryReview &&
       policy.mode === ReviewMode.Independent &&
       request.contribution.authorPrincipalId === request.principalId
     ) {
-      return { allowed: false, reason: "self-approval" };
+      return { allowed: false, reason: AuthorizationDenialReason.SelfApproval };
     }
   }
 
@@ -195,7 +207,7 @@ export function authorize(
       (delegation.resourceIds !== undefined &&
         (request.resourceId === undefined || !delegation.resourceIds.includes(request.resourceId))))
   )
-    return { allowed: false, reason: "delegation-denied" };
+    return { allowed: false, reason: AuthorizationDenialReason.DelegationDenied };
 
   return { allowed: true, grantId: grant.id };
 }

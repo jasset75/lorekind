@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import {
   ApprovalKind,
   ContributionState,
+  ContributionIntent,
   EditorialErrorCode,
   EditorialError,
 } from "@lorekind/core";
@@ -71,7 +72,7 @@ export function decodeSnapshot(text: string): WorkspaceSnapshot {
       !Number.isSafeInteger(item.version) ||
       Number(item.version) < 0 ||
       !Object.values(ContributionState).some((state) => state === String(item.state)) ||
-      item.intent !== "publish" ||
+      item.intent !== ContributionIntent.Publish ||
       !isObject(item.scope) ||
       !["contentRevision", "schemaRevision", "policyRevision", "targetRevision"].every(
         (key) => typeof (item.scope as Record<string, unknown>)[key] === "string",

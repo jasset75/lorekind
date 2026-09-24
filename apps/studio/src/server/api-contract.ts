@@ -3,6 +3,7 @@ import {
   EditorialAction,
   InternalEditorialAction,
   ContributionState,
+  ContributionIntent,
 } from "@lorekind/core";
 import { createRoute, z } from "@hono/zod-openapi";
 
@@ -47,7 +48,7 @@ const contribution = z
     id: z.string(),
     foldId: z.string(),
     authorPrincipalId: z.string(),
-    intent: z.enum(["publish", "withdraw"]),
+    intent: z.enum(ContributionIntent),
     state,
     version: revision,
     scope,

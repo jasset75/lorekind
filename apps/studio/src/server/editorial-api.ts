@@ -7,6 +7,7 @@ import { languageDetector } from "hono/language";
 import {
   EditorialErrorCode,
   EditorialAction,
+  ProposalWriteMode,
   contentDiff,
   contentDigest,
   EditorialError,
@@ -423,7 +424,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
         await execute(c, {
           ...c.get("conditions"),
           action: EditorialAction.Save,
-          mode: "create",
+          mode: ProposalWriteMode.Create,
           content: input.content,
         }),
         201,
@@ -435,7 +436,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       await execute(c, {
         ...c.get("conditions"),
         action: EditorialAction.Save,
-        mode: "update",
+        mode: ProposalWriteMode.Update,
         proposalId: c.get("proposal").id,
         content: c.req.valid("json").content,
       }),
