@@ -17,7 +17,8 @@
   const t = (key: MessageKey, params: ValidationIssue["params"] = {}) =>
     translate(language, key, params);
   type Field = { key: string; label: string; labelKey?: string; multiline?: boolean };
-  type SimulatedActor = "author" | "reviewer";
+  const SimulatedActor = { Author: "author", Reviewer: "reviewer" } as const;
+  type SimulatedActor = (typeof SimulatedActor)[keyof typeof SimulatedActor];
   type View = {
     target?: ApiTarget;
     allowed?: Record<string, boolean>;
@@ -32,7 +33,7 @@
     diff: { field: string; before: unknown; after: unknown }[];
   };
   let view = $state<View | null>(null);
-  let actor = $state<SimulatedActor>("author");
+  let actor = $state<SimulatedActor>(SimulatedActor.Author);
   let draft = $state<Record<string, unknown>>({});
   let messageKey = $state<MessageKey | null>(null);
   let failure = $state<{ code: string; issues: ValidationIssue[] } | null>(null);
@@ -172,8 +173,8 @@
           disabled={busy || dirty || retry !== null}
           onchange={() => void refresh()}
         >
-          <option value="author">{t("ui.author")}</option>
-          <option value="reviewer">{t("ui.reviewer")}</option>
+          <option value={SimulatedActor.Author}>{t("ui.author")}</option>
+          <option value={SimulatedActor.Reviewer}>{t("ui.reviewer")}</option>
         </select>
       </label>
     {:else if view?.target}<p>{t("ui.identity")}: {view.target.principalId}</p>{/if}
@@ -210,7 +211,9 @@
               <textarea
                 rows="7"
                 value={String(draft[field.key] ?? "")}
-                disabled={busy || retry !== null || !allowed("save", actor === "author")}
+                disabled={busy ||
+                  retry !== null ||
+                  !allowed("save", actor === SimulatedActor.Author)}
                 oninput={(event) => {
                   draft[field.key] = event.currentTarget.value;
                   dirty = true;
@@ -219,7 +222,9 @@
             {:else}
               <input
                 value={String(draft[field.key] ?? "")}
-                disabled={busy || retry !== null || !allowed("save", actor === "author")}
+                disabled={busy ||
+                  retry !== null ||
+                  !allowed("save", actor === SimulatedActor.Author)}
                 oninput={(event) => {
                   draft[field.key] = event.currentTarget.value;
                   dirty = true;
@@ -230,14 +235,14 @@
         {/each}
         <div class="actions">
           <button
-            disabled={busy || retry !== null || !allowed("save", actor === "author")}
+            disabled={busy || retry !== null || !allowed("save", actor === SimulatedActor.Author)}
             onclick={() => void execute("save")}>{t("ui.save")}</button
           >
           <button
             disabled={busy ||
               dirty ||
               retry !== null ||
-              !allowed("submit", actor === "author") ||
+              !allowed("submit", actor === SimulatedActor.Author) ||
               view.snapshot.contribution?.state !== "Draft"}
             onclick={() => void execute("submit")}>{t("ui.submit")}</button
           >
@@ -263,7 +268,7 @@
             disabled={busy ||
               dirty ||
               retry !== null ||
-              !allowed("approve", actor === "reviewer") ||
+              !allowed("approve", actor === SimulatedActor.Reviewer) ||
               view.snapshot.contribution?.state !== "InReview"}
             onclick={() => void execute("approve")}>{t("ui.approve")}</button
           >
@@ -271,7 +276,7 @@
             disabled={busy ||
               dirty ||
               retry !== null ||
-              !allowed("publish", actor === "reviewer") ||
+              !allowed("publish", actor === SimulatedActor.Reviewer) ||
               view.snapshot.contribution?.state !== "Approved"}
             onclick={() => void execute("publish")}>{t("ui.publish")}</button
           >
