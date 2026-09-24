@@ -3,7 +3,7 @@
   import type { ApiTarget, StudioCommand } from "../client/editorial-client";
   import { onMount } from "svelte";
   import ThemeSwitcher from "./ThemeSwitcher.svelte";
-  import type { ValidationIssue } from "@lorekind/core";
+  import type { Contribution, ValidationIssue } from "@lorekind/core";
   import { translate, label, errorMessage, issueMessage } from "../i18n";
   import type { Locale } from "../i18n";
   import type { MessageKey } from "../i18n/catalogs";
@@ -26,7 +26,7 @@
       revision: number;
       draft: Record<string, unknown>;
       canonical: Record<string, unknown>;
-      contribution: { state: string } | null;
+      contribution: Pick<Contribution, "state"> | null;
       audit: unknown[];
     };
     diff: { field: string; before: unknown; after: unknown }[];
