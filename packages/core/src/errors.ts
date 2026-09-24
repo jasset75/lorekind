@@ -1,0 +1,21 @@
+export const EditorialErrorCode = {
+  Forbidden: "forbidden",
+  Conflict: "conflict",
+  InvalidTransition: "invalid-transition",
+  InvalidInput: "invalid-input",
+  ApprovalRequired: "approval-required",
+  StaleReview: "stale-review",
+  InvalidJson: "invalid-json",
+  UnsupportedDelegation: "unsupported-delegation",
+  Validation: "validation",
+  ProfileMismatch: "profile-mismatch",
+  IdempotencyConflict: "idempotency-conflict",
+  ProposalNotCurrent: "proposal-not-current",
+  ActiveProposalExists: "active-proposal-exists",
+  ProposalNotEditable: "proposal-not-editable",
+  DraftRequired: "draft-required",
+  CorruptStore: "corrupt-store",
+  StoreBusy: "store-busy",
+  CustomValidation: "custom-validation",
+} as const;
+export type EditorialErrorCode = (typeof EditorialErrorCode)[keyof typeof EditorialErrorCode];

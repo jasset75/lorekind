@@ -1,3 +1,4 @@
+import { ApiErrorCode } from "../api-errors";
 import { createEditorialApi } from "./editorial-api";
 import type { ApiPrincipal, ApiServices } from "./editorial-api";
 
@@ -33,7 +34,7 @@ export function createBrowserEditorialApi(
     },
   });
   return async (request: Request): Promise<Response> => {
-    const reject = (status: number, code: string) =>
+    const reject = (status: number, code: ApiErrorCode) =>
       Response.json({ error: { code, details: [] } }, { status });
     const suppliedOrigin = request.headers.get("origin");
     const mutation = !["GET", "HEAD", "OPTIONS"].includes(request.method);
@@ -44,12 +45,12 @@ export function createBrowserEditorialApi(
       (mutation && suppliedOrigin !== origin.origin) ||
       ["cross-site", "same-site"].includes(request.headers.get("sec-fetch-site") ?? "")
     ) {
-      response = reject(403, "request-origin-denied");
+      response = reject(403, ApiErrorCode.RequestOriginDenied);
     } else {
       try {
         response = await api(request);
       } catch {
-        response = reject(500, "internal-error");
+        response = reject(500, ApiErrorCode.InternalError);
       }
     }
     response.headers.set("Cache-Control", "no-store");

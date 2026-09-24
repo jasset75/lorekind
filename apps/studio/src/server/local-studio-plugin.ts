@@ -1,8 +1,14 @@
+import { ApiErrorCode } from "../api-errors";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ViteUserConfig } from "astro";
 type Plugin = Extract<NonNullable<ViteUserConfig["plugins"]>[number], { name: string }>;
-import { EditorialError, EditorialWorkspace, contentDiff } from "@lorekind/core";
+import {
+  EditorialErrorCode,
+  EditorialError,
+  EditorialWorkspace,
+  contentDiff,
+} from "@lorekind/core";
 import type { ContentProfile, EvaluationCommand } from "@lorekind/core";
 import { FileEvaluationStore } from "./evaluation-store";
 import { articleProfile } from "./evaluation-profile";
@@ -11,6 +17,13 @@ import { createEditorialApi } from "./editorial-api";
 import { API_V1_BASE_PATH } from "./api-paths";
 import { verifyConfiguredBearer } from "./api-auth";
 import { localStudioConfig } from "./local-studio-config";
+
+const LocalStudioErrorCode = {
+  LocalOnly: "local-only",
+  UnknownActor: "unknown-actor",
+  JsonRequired: "json-required",
+  StudioUnavailable: "studio-unavailable",
+} as const;
 
 /** Deliberately development-only; this is not an authentication implementation. */
 export function localStudioPlugin(): Plugin {
@@ -60,7 +73,9 @@ export function localStudioPlugin(): Plugin {
             "Content-Type": "application/json",
             "Cache-Control": "no-store",
           });
-          response.end(JSON.stringify({ error: { code: "local-only", details: [] } }));
+          response.end(
+            JSON.stringify({ error: { code: LocalStudioErrorCode.LocalOnly, details: [] } }),
+          );
           return;
         }
         try {
@@ -73,7 +88,7 @@ export function localStudioPlugin(): Plugin {
             length += chunk.length;
             if (length > 131072) {
               response.writeHead(413, { "Content-Type": "application/json" });
-              response.end(JSON.stringify({ error: { code: "too-large", details: [] } }));
+              response.end(JSON.stringify({ error: { code: ApiErrorCode.TooLarge, details: [] } }));
               return;
             }
             chunks.push(chunk);
@@ -91,7 +106,9 @@ export function localStudioPlugin(): Plugin {
           response.end(await result.text());
         } catch {
           response.writeHead(500, { "Content-Type": "application/json" });
-          response.end(JSON.stringify({ error: { code: "internal-error", details: [] } }));
+          response.end(
+            JSON.stringify({ error: { code: ApiErrorCode.InternalError, details: [] } }),
+          );
         }
       });
       server.middlewares.use(async (request, response, next) => {
@@ -108,23 +125,23 @@ export function localStudioPlugin(): Plugin {
           (request.headers.origin !== undefined && request.headers.origin !== `http://${host}`) ||
           (request.method !== "GET" && request.headers.origin !== `http://${host}`)
         )
-          return send(403, { error: "local-only" });
+          return send(403, { error: LocalStudioErrorCode.LocalOnly });
         try {
           const app = await loadWorkspace();
           const url = new URL(request.url!, `http://${host}`);
           const actor = url.searchParams.get("actor");
           if (actor !== "author" && actor !== "reviewer")
-            return send(403, { error: "unknown-actor" });
+            return send(403, { error: LocalStudioErrorCode.UnknownActor });
           const context = evaluationContext(app, actor);
           if (request.method === "POST") {
             if (!request.headers["content-type"]?.startsWith("application/json"))
-              return send(415, { error: "json-required" });
+              return send(415, { error: LocalStudioErrorCode.JsonRequired });
             const chunks: Buffer[] = [];
             let size = 0;
             for await (const chunk of request) {
               const bytes = Buffer.from(chunk);
               size += bytes.length;
-              if (size > 131072) return send(413, { error: "too-large" });
+              if (size > 131072) return send(413, { error: ApiErrorCode.TooLarge });
               chunks.push(bytes);
             }
             const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
@@ -143,11 +160,11 @@ export function localStudioPlugin(): Plugin {
               (body.action === "save" &&
                 (!body.content || typeof body.content !== "object" || Array.isArray(body.content)))
             )
-              return send(400, { error: "invalid-input" });
+              return send(400, { error: EditorialErrorCode.InvalidInput });
             const receipt = await app.execute(body as EvaluationCommand, context);
             return send(200, { receipt });
           }
-          if (request.method !== "GET") return send(405, { error: "method-not-allowed" });
+          if (request.method !== "GET") return send(405, { error: ApiErrorCode.MethodNotAllowed });
           const snapshot = await app.read(context);
           const { operations, ...view } = snapshot;
           void operations;
@@ -163,14 +180,15 @@ export function localStudioPlugin(): Plugin {
           });
         } catch (error) {
           if (error instanceof EditorialError)
-            return send(error.code === "forbidden" ? 403 : 409, {
+            return send(error.code === EditorialErrorCode.Forbidden ? 403 : 409, {
               error: error.code,
               details: error.details,
               issues: error.issues,
             });
-          if (error instanceof SyntaxError) return send(400, { error: "invalid-json" });
+          if (error instanceof SyntaxError)
+            return send(400, { error: EditorialErrorCode.InvalidJson });
           server.config.logger.error(String(error));
-          return send(500, { error: "studio-unavailable" });
+          return send(500, { error: LocalStudioErrorCode.StudioUnavailable });
         }
       });
     },

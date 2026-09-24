@@ -1,6 +1,13 @@
-import { ContributionState, EditorialAction, Capability } from "@lorekind/core";
+import { ApiErrorCode } from "../api-errors";
+import { EditorialErrorCode, ContributionState, EditorialAction, Capability } from "@lorekind/core";
 import type { z } from "zod";
 import type { responses } from "../server/api-contract";
+
+export const StudioErrorCode = {
+  WorkspaceSelectionRequired: "workspace-selection-required",
+  IdentityChanged: "identity-changed",
+} as const;
+export type StudioErrorCode = (typeof StudioErrorCode)[keyof typeof StudioErrorCode];
 
 type Result<K extends keyof typeof responses> = z.infer<(typeof responses)[K]>;
 export type ApiTarget = { foldId: string; proposalId?: string; principalId: string };
@@ -17,6 +24,7 @@ export type StudioCommand = {
 };
 export class StudioApiError extends Error {
   constructor(
+    // Remote services may return codes unknown to this client version.
     readonly code: string,
     readonly issues = [],
     readonly status = 0,
@@ -57,10 +65,11 @@ export function editorialClient(
       const { body: identity } = await read<"identity">("/me");
       const { body: folds } = await read<"folds">("/folds");
       // Workspace selection is not implemented; require exactly one accessible Fold.
-      if (folds.items.length !== 1) throw new StudioApiError("workspace-selection-required");
+      if (folds.items.length !== 1)
+        throw new StudioApiError(StudioErrorCode.WorkspaceSelectionRequired);
       const fold = folds.items[0]!;
       const scope = identity.folds.find((item) => item.id === fold.id);
-      if (!scope) throw new StudioApiError("forbidden");
+      if (!scope) throw new StudioApiError(EditorialErrorCode.Forbidden);
       const root = `/folds/${encodeURIComponent(fold.id)}`;
       const schema = await read<"schemas">(`${root}/schemas`);
       const entry = await read<"entry">(`${root}/entries/${encodeURIComponent(fold.id)}`);
@@ -73,11 +82,12 @@ export function editorialClient(
       const parts = [schema, entry, list, proposal, diff, history].filter((part) => part);
       const etag = entry.etag;
       if (!etag || !/^"v\d+"$/.test(etag) || parts.some((part) => part!.etag !== etag))
-        throw new StudioApiError("conflict");
+        throw new StudioApiError(EditorialErrorCode.Conflict);
       const revision = Number(etag.slice(2, -1));
-      if (!Number.isSafeInteger(revision)) throw new StudioApiError("invalid-precondition");
+      if (!Number.isSafeInteger(revision))
+        throw new StudioApiError(ApiErrorCode.InvalidPrecondition);
       const fields = schema.body.items.find((item) => item.id === fold.id)?.editableFields;
-      if (!fields) throw new StudioApiError("profile-mismatch");
+      if (!fields) throw new StudioApiError(EditorialErrorCode.ProfileMismatch);
       const contribution = proposal?.body.contribution ?? null;
       const own = contribution?.authorPrincipalId === identity.principalId;
       const can = (capability: Capability) => scope.capabilities.includes(capability);
@@ -115,16 +125,18 @@ export function editorialClient(
     },
     async execute(command: StudioCommand) {
       const target = command.target;
-      if (!target) throw new StudioApiError("invalid-input");
+      if (!target) throw new StudioApiError(EditorialErrorCode.InvalidInput);
       const { body: identity } = await read<"identity">("/me");
-      if (identity.principalId !== target.principalId) throw new StudioApiError("identity-changed");
+      if (identity.principalId !== target.principalId)
+        throw new StudioApiError(StudioErrorCode.IdentityChanged);
       const root = `/folds/${encodeURIComponent(target.foldId)}/proposals`;
       const proposal = target.proposalId
         ? `${root}/${encodeURIComponent(target.proposalId)}`
         : undefined;
       const save = command.action === EditorialAction.Save;
-      if (!save && !proposal) throw new StudioApiError("draft-required");
-      if (!studioActions.includes(command.action)) throw new StudioApiError("invalid-input");
+      if (!save && !proposal) throw new StudioApiError(EditorialErrorCode.DraftRequired);
+      if (!studioActions.includes(command.action))
+        throw new StudioApiError(EditorialErrorCode.InvalidInput);
       return request(save ? (proposal ?? root) : `${proposal}/${command.action}`, {
         method: save && proposal ? "PATCH" : "POST",
         headers: {

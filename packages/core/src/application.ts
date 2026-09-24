@@ -1,3 +1,4 @@
+import { EditorialErrorCode } from "./errors";
 import { EditorialAction } from "./actions";
 import { authorize, Capability } from "./authorization";
 import { createDraft, reconcilePublication, transitionContribution } from "./workflow";
@@ -13,7 +14,9 @@ export interface ValidationIssue {
 /** Compatibility for trusted older profiles; their prose is not a machine-readable contract. */
 export function validationIssues(errors: readonly (ValidationIssue | string)[]): ValidationIssue[] {
   return errors.map((error) =>
-    typeof error === "string" ? { code: "custom-validation", path: [], params: {} } : error,
+    typeof error === "string"
+      ? { code: EditorialErrorCode.CustomValidation, path: [], params: {} }
+      : error,
   );
 }
 export interface ContentProfile {
@@ -87,6 +90,7 @@ export type EvaluationCommand = {
     }
 );
 
+/** Adapters and content profiles may supply additional error codes. */
 export class EditorialError extends Error {
   constructor(
     readonly code: string,
@@ -108,7 +112,7 @@ export function stableJson(value: unknown): string {
       .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
       .join(",")}}`;
   }
-  throw new EditorialError("invalid-json");
+  throw new EditorialError(EditorialErrorCode.InvalidJson);
 }
 
 export async function contentDigest(value: unknown): Promise<string> {
@@ -166,22 +170,25 @@ export class EditorialWorkspace {
       }).allowed ||
       context.foldId !== this.profile.id
     )
-      throw new EditorialError("forbidden");
+      throw new EditorialError(EditorialErrorCode.Forbidden);
     // The local evaluator currently supports simulated human actors only.
-    if (context.delegationId !== undefined) throw new EditorialError("unsupported-delegation");
+    if (context.delegationId !== undefined)
+      throw new EditorialError(EditorialErrorCode.UnsupportedDelegation);
   }
 
   private validate(content: Content): void {
     stableJson(content);
     const errors = this.profile.validate(content);
-    if (errors.length) throw new EditorialError("validation", [], validationIssues(errors));
+    if (errors.length)
+      throw new EditorialError(EditorialErrorCode.Validation, [], validationIssues(errors));
   }
 
   async read(context: WorkflowContext): Promise<WorkspaceSnapshot> {
     this.checkRead(context);
     const existing = await this.store.read();
     if (existing !== null) {
-      if (existing.profileId !== this.profile.id) throw new EditorialError("profile-mismatch");
+      if (existing.profileId !== this.profile.id)
+        throw new EditorialError(EditorialErrorCode.ProfileMismatch);
       return existing;
     }
     this.validate(this.profile.initialContent);
@@ -206,20 +213,23 @@ export class EditorialWorkspace {
       !Number.isSafeInteger(command.expectedRevision) ||
       command.expectedRevision < 0
     )
-      throw new EditorialError("invalid-input");
+      throw new EditorialError(EditorialErrorCode.InvalidInput);
     const digest = await contentDigest(command);
     const initial = await this.read(authority);
     return this.store.transact(async (loaded) => {
       const snapshot = loaded ?? initial;
-      if (snapshot.profileId !== this.profile.id) throw new EditorialError("profile-mismatch");
+      if (snapshot.profileId !== this.profile.id)
+        throw new EditorialError(EditorialErrorCode.ProfileMismatch);
       const prior = snapshot.operations.find(
         (operation) => operation.actor === authority.principalId && operation.key === command.key,
       );
       if (prior) {
-        if (prior.digest !== digest) throw new EditorialError("idempotency-conflict");
+        if (prior.digest !== digest)
+          throw new EditorialError(EditorialErrorCode.IdempotencyConflict);
         return { snapshot, result: prior.receipt };
       }
-      if (snapshot.revision !== command.expectedRevision) throw new EditorialError("conflict");
+      if (snapshot.revision !== command.expectedRevision)
+        throw new EditorialError(EditorialErrorCode.Conflict);
       const context = {
         ...authority,
         schemaRevision: this.profile.schemaRevision,
@@ -230,11 +240,12 @@ export class EditorialWorkspace {
         command.proposalId !== undefined &&
         (snapshot.contribution === null || command.proposalId !== currentId)
       )
-        throw new EditorialError("proposal-not-current");
+        throw new EditorialError(EditorialErrorCode.ProposalNotCurrent);
       const creating = snapshot.contribution === null || snapshot.contribution.state === "Applied";
       if (command.mode === "create" && !creating)
-        throw new EditorialError("active-proposal-exists");
-      if (command.mode === "update" && creating) throw new EditorialError("proposal-not-editable");
+        throw new EditorialError(EditorialErrorCode.ActiveProposalExists);
+      if (command.mode === "update" && creating)
+        throw new EditorialError(EditorialErrorCode.ProposalNotEditable);
       let proposalId = currentId;
       let baseContent = snapshot.baseContent;
       let previousProposals = snapshot.previousProposals ?? [];
@@ -266,10 +277,11 @@ export class EditorialWorkspace {
               );
         draft = command.content;
       } else {
-        if (snapshot.contribution === null) throw new EditorialError("draft-required");
+        if (snapshot.contribution === null)
+          throw new EditorialError(EditorialErrorCode.DraftRequired);
         this.validate(snapshot.draft);
         if (snapshot.contribution.scope.contentRevision !== (await contentDigest(snapshot.draft)))
-          throw new EditorialError("corrupt-store");
+          throw new EditorialError(EditorialErrorCode.CorruptStore);
         transition = decision(
           transitionContribution(
             snapshot.contribution,
@@ -296,7 +308,7 @@ export class EditorialWorkspace {
           scope: contribution.scope,
           outcome: "applied",
         });
-        if (!applied.ok) throw new EditorialError("conflict");
+        if (!applied.ok) throw new EditorialError(EditorialErrorCode.Conflict);
         contribution = applied.contribution;
         canonical = draft;
         canonicalRevision = await contentDigest(canonical);
