@@ -38,8 +38,9 @@ guarantees remain pending.
 An optional browser API boundary now verifies Cloudflare Access assertions behind
 a replaceable identity interface, checks request origins, and resolves principal
 mapping and grants per request. Synthetic signed-token workflow tests cover this
-increment. Studio still uses the local simulator: real login, the Studio API
-client and hosted runtime binding remain open; the P0 outcome below is not closed.
+increment. Studio now has an opt-in same-origin API client with server-derived
+identity and permissions; local simulation remains the default. Real login and
+hosted runtime binding remain open; the P0 outcome below is not closed.
 
 ## Delivery model: one evolving MVP
 

@@ -5,6 +5,14 @@ export const en = {
   "ui.language": "Language",
   "ui.eyebrow": "Lorekind Studio · MVP",
   "ui.heading": "Editorial workspace",
+  "error.api-unavailable": "Could not connect to the editorial API. Check your session and retry.",
+  "ui.apiMode": "Authenticated API mode",
+  "ui.apiIntro":
+    "Your session determines access. Changes are applied to the backend’s local copy; remote Git delivery is not available yet.",
+  "ui.identity": "Signed in as",
+  "error.workspace-selection-required":
+    "This Studio currently requires exactly one accessible workspace.",
+  "error.identity-changed": "Your identity changed. Reload before continuing.",
   "ui.localMode": "Local mode",
   "ui.limits": "Current MVP limitations",
   "ui.reconnect": "Reconnect to Studio",
@@ -103,6 +111,15 @@ export const es: Record<MessageKey, string> = {
   "ui.language": "Idioma",
   "ui.eyebrow": "Lorekind Studio · MVP",
   "ui.heading": "Espacio editorial",
+  "error.api-unavailable":
+    "No se pudo conectar con la API editorial. Comprueba tu sesión y vuelve a intentarlo.",
+  "ui.apiMode": "Modo API autenticada",
+  "ui.apiIntro":
+    "Tu sesión determina el acceso. Los cambios se aplican a la copia local del servidor; la entrega a Git remoto todavía no está disponible.",
+  "ui.identity": "Sesión iniciada como",
+  "error.workspace-selection-required":
+    "Este Studio requiere por ahora un único espacio de trabajo accesible.",
+  "error.identity-changed": "Tu identidad ha cambiado. Recarga antes de continuar.",
   "ui.localMode": "Modo local",
   "ui.limits": "Limitaciones actuales del MVP",
   "ui.reconnect": "Reconectar con Studio",

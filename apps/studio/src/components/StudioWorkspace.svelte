@@ -1,16 +1,22 @@
 <script lang="ts">
+  import { editorialClient, StudioApiError } from "../client/editorial-client";
+  import type { ApiTarget, StudioCommand } from "../client/editorial-client";
   import { onMount } from "svelte";
   import ThemeSwitcher from "./ThemeSwitcher.svelte";
   import type { ValidationIssue } from "@lorekind/core";
   import { translate, label, errorMessage, issueMessage } from "../i18n";
   import type { Locale } from "../i18n";
   import type { MessageKey } from "../i18n/catalogs";
-  let { initialLocale = "es" }: { initialLocale?: Locale } = $props();
+  let { initialLocale = "es", apiMode = false }: { initialLocale?: Locale; apiMode?: boolean } =
+    $props();
+  const api = editorialClient(fetch, () => language);
   let language = $state<Locale>(initialLocale);
   const t = (key: MessageKey, params: ValidationIssue["params"] = {}) =>
     translate(language, key, params);
   type Field = { key: string; label: string; labelKey?: string; multiline?: boolean };
   type View = {
+    target?: ApiTarget;
+    allowed?: Record<string, boolean>;
     profile: { title: string; titleKey?: string; fields: Field[] };
     snapshot: {
       revision: number;
@@ -37,7 +43,7 @@
   );
   let busy = $state(false);
   let dirty = $state(false);
-  let retry = $state<{ actor: string; command: Record<string, unknown> } | null>(null);
+  let retry = $state<{ actor: string; command: StudioCommand } | null>(null);
   const fieldLabel = (field: Field) => label(language, field.labelKey, field.label);
   // Presentation-only changes: do not reload or overwrite an unsaved draft on language switch.
   $effect(() => {
@@ -49,7 +55,16 @@
     const skipLink = document.querySelector(".skip-link");
     if (skipLink) skipLink.textContent = t("ui.skip");
   });
+  const allowed = (action: string, local: boolean) =>
+    apiMode ? view?.allowed?.[action] === true : local;
   async function load() {
+    if (apiMode) {
+      const loaded = await api.load();
+      view = loaded;
+      draft = $state.snapshot(loaded.snapshot.draft);
+      dirty = false;
+      return;
+    }
     const response = await fetch(`/__lorekind_studio?actor=${actor}`);
     if (!response.ok) throw new Error("studio-unavailable");
     view = await response.json();
@@ -62,8 +77,16 @@
     try {
       await load();
       messageKey = "status.loaded";
-    } catch {
-      failure = { code: "studio-unavailable", issues: [] };
+    } catch (error) {
+      failure = {
+        code:
+          error instanceof StudioApiError
+            ? error.code
+            : apiMode
+              ? "api-unavailable"
+              : "studio-unavailable",
+        issues: [],
+      };
     } finally {
       busy = false;
     }
@@ -81,27 +104,35 @@
               key: crypto.randomUUID(),
               action,
               expectedRevision: view.snapshot.revision,
+              ...(apiMode ? { target: view.target } : {}),
               ...(action === "save" ? { content: $state.snapshot(draft) } : {}),
             },
           };
     retry = pending;
     try {
-      const response = await fetch(`/__lorekind_studio?actor=${pending.actor}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(pending.command),
-      });
+      const response = apiMode
+        ? await api.execute(pending.command)
+        : await fetch(`/__lorekind_studio?actor=${pending.actor}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pending.command),
+          });
       const result = await response.json();
       if (!response.ok) {
         if (response.status < 500) retry = null;
-        failure = { code: result.error, issues: result.issues ?? [] };
+        failure = apiMode
+          ? { code: result.error.code, issues: result.error.issues ?? [] }
+          : { code: result.error, issues: result.issues ?? [] };
         return;
       }
       await load();
       retry = null;
       messageKey = action === "publish" ? "status.applied" : "status.saved";
-    } catch {
-      messageKey = "status.uncertain";
+    } catch (error) {
+      if (error instanceof StudioApiError) {
+        retry = null;
+        failure = { code: error.code, issues: error.issues };
+      } else messageKey = "status.uncertain";
     } finally {
       busy = false;
     }
@@ -118,8 +149,8 @@
   </header>
   <h1>{view ? label(language, view.profile.titleKey, view.profile.title) : t("ui.heading")}</h1>
   <aside class="runtime-notice" aria-label={t("ui.limits")}>
-    <strong>{t("ui.localMode")}</strong>
-    <p>{t("ui.intro")}</p>
+    <strong>{t(apiMode ? "ui.apiMode" : "ui.localMode")}</strong>
+    <p>{t(apiMode ? "ui.apiIntro" : "ui.intro")}</p>
   </aside>
   <div class="toolbar">
     <label
@@ -129,17 +160,19 @@
         <option value="en" lang="en">English</option>
       </select>
     </label>
-    <label
-      >{t("ui.actor")}
-      <select
-        bind:value={actor}
-        disabled={busy || dirty || retry !== null}
-        onchange={() => void refresh()}
-      >
-        <option value="author">{t("ui.author")}</option>
-        <option value="reviewer">{t("ui.reviewer")}</option>
-      </select>
-    </label>
+    {#if !apiMode}
+      <label
+        >{t("ui.actor")}
+        <select
+          bind:value={actor}
+          disabled={busy || dirty || retry !== null}
+          onchange={() => void refresh()}
+        >
+          <option value="author">{t("ui.author")}</option>
+          <option value="reviewer">{t("ui.reviewer")}</option>
+        </select>
+      </label>
+    {:else if view?.target}<p>{t("ui.identity")}: {view.target.principalId}</p>{/if}
     <button disabled={busy || dirty || retry !== null} onclick={() => void refresh()}
       >{t("ui.reload")}</button
     >
@@ -173,7 +206,7 @@
               <textarea
                 rows="7"
                 value={String(draft[field.key] ?? "")}
-                disabled={busy || retry !== null || actor !== "author"}
+                disabled={busy || retry !== null || !allowed("save", actor === "author")}
                 oninput={(event) => {
                   draft[field.key] = event.currentTarget.value;
                   dirty = true;
@@ -182,7 +215,7 @@
             {:else}
               <input
                 value={String(draft[field.key] ?? "")}
-                disabled={busy || retry !== null || actor !== "author"}
+                disabled={busy || retry !== null || !allowed("save", actor === "author")}
                 oninput={(event) => {
                   draft[field.key] = event.currentTarget.value;
                   dirty = true;
@@ -193,14 +226,14 @@
         {/each}
         <div class="actions">
           <button
-            disabled={busy || retry !== null || actor !== "author"}
+            disabled={busy || retry !== null || !allowed("save", actor === "author")}
             onclick={() => void execute("save")}>{t("ui.save")}</button
           >
           <button
             disabled={busy ||
               dirty ||
               retry !== null ||
-              actor !== "author" ||
+              !allowed("submit", actor === "author") ||
               view.snapshot.contribution?.state !== "Draft"}
             onclick={() => void execute("submit")}>{t("ui.submit")}</button
           >
@@ -226,7 +259,7 @@
             disabled={busy ||
               dirty ||
               retry !== null ||
-              actor !== "reviewer" ||
+              !allowed("approve", actor === "reviewer") ||
               view.snapshot.contribution?.state !== "InReview"}
             onclick={() => void execute("approve")}>{t("ui.approve")}</button
           >
@@ -234,7 +267,7 @@
             disabled={busy ||
               dirty ||
               retry !== null ||
-              actor !== "reviewer" ||
+              !allowed("publish", actor === "reviewer") ||
               view.snapshot.contribution?.state !== "Approved"}
             onclick={() => void execute("publish")}>{t("ui.publish")}</button
           >
@@ -242,6 +275,7 @@
             disabled={busy ||
               dirty ||
               retry !== null ||
+              !allowed("dismiss", true) ||
               !["Draft", "InReview", "Approved"].includes(view.snapshot.contribution?.state ?? "")}
             onclick={() => void execute("dismiss")}>{t("ui.dismiss")}</button
           >
@@ -249,6 +283,7 @@
             disabled={busy ||
               dirty ||
               retry !== null ||
+              !allowed("restore", true) ||
               view.snapshot.contribution?.state !== "Dismissed"}
             onclick={() => void execute("restore")}>{t("ui.restore")}</button
           >
