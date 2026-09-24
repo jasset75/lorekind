@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
 import { languageDetector } from "hono/language";
 import {
+  EditorialAction,
   contentDiff,
   contentDigest,
   EditorialError,
@@ -412,7 +413,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       return c.json(
         await execute(c, {
           ...c.get("conditions"),
-          action: "save",
+          action: EditorialAction.Save,
           mode: "create",
           content: input.content,
         }),
@@ -424,7 +425,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     c.json(
       await execute(c, {
         ...c.get("conditions"),
-        action: "save",
+        action: EditorialAction.Save,
         mode: "update",
         proposalId: c.get("proposal").id,
         content: c.req.valid("json").content,

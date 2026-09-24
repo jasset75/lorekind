@@ -1,9 +1,9 @@
 <script lang="ts">
   import { editorialClient, StudioApiError } from "../client/editorial-client";
-  import type { ApiTarget, StudioCommand } from "../client/editorial-client";
+  import type { ApiTarget, StudioCommand, StudioAction } from "../client/editorial-client";
   import { onMount } from "svelte";
   import ThemeSwitcher from "./ThemeSwitcher.svelte";
-  import { ContributionState } from "@lorekind/core";
+  import { ContributionState, EditorialAction } from "@lorekind/core";
   import type { Contribution, ValidationIssue } from "@lorekind/core";
   import { translate, label, errorMessage, issueMessage } from "../i18n";
   import type { Locale } from "../i18n";
@@ -27,7 +27,7 @@
   ];
   type View = {
     target?: ApiTarget;
-    allowed?: Record<string, boolean>;
+    allowed?: Record<StudioAction, boolean>;
     profile: { title: string; titleKey?: string; fields: Field[] };
     snapshot: {
       revision: number;
@@ -66,7 +66,7 @@
     const skipLink = document.querySelector(".skip-link");
     if (skipLink) skipLink.textContent = t("ui.skip");
   });
-  const allowed = (action: string, local: boolean) =>
+  const allowed = (action: StudioAction, local: boolean) =>
     apiMode ? view?.allowed?.[action] === true : local;
   async function load() {
     if (apiMode) {
@@ -102,7 +102,7 @@
       busy = false;
     }
   }
-  async function execute(action: string, repeat = false) {
+  async function execute(action: StudioAction, repeat = false) {
     if (!view) return;
     busy = true;
     failure = null;
@@ -116,7 +116,7 @@
               action,
               expectedRevision: view.snapshot.revision,
               ...(apiMode ? { target: view.target } : {}),
-              ...(action === "save" ? { content: $state.snapshot(draft) } : {}),
+              ...(action === EditorialAction.Save ? { content: $state.snapshot(draft) } : {}),
             },
           };
     retry = pending;
@@ -138,7 +138,7 @@
       }
       await load();
       retry = null;
-      messageKey = action === "publish" ? "status.applied" : "status.saved";
+      messageKey = action === EditorialAction.Publish ? "status.applied" : "status.saved";
     } catch (error) {
       if (error instanceof StudioApiError) {
         retry = null;
@@ -197,7 +197,7 @@
   {/if}
   {#if retry}<button
       disabled={busy}
-      onclick={() => void execute(String(retry?.command.action), true)}>{t("ui.retry")}</button
+      onclick={() => retry && void execute(retry.command.action, true)}>{t("ui.retry")}</button
     >{/if}
   {#if view}
     <p>
@@ -219,7 +219,7 @@
                 value={String(draft[field.key] ?? "")}
                 disabled={busy ||
                   retry !== null ||
-                  !allowed("save", actor === SimulatedActor.Author)}
+                  !allowed(EditorialAction.Save, actor === SimulatedActor.Author)}
                 oninput={(event) => {
                   draft[field.key] = event.currentTarget.value;
                   dirty = true;
@@ -230,7 +230,7 @@
                 value={String(draft[field.key] ?? "")}
                 disabled={busy ||
                   retry !== null ||
-                  !allowed("save", actor === SimulatedActor.Author)}
+                  !allowed(EditorialAction.Save, actor === SimulatedActor.Author)}
                 oninput={(event) => {
                   draft[field.key] = event.currentTarget.value;
                   dirty = true;
@@ -241,16 +241,18 @@
         {/each}
         <div class="actions">
           <button
-            disabled={busy || retry !== null || !allowed("save", actor === SimulatedActor.Author)}
-            onclick={() => void execute("save")}>{t("ui.save")}</button
+            disabled={busy ||
+              retry !== null ||
+              !allowed(EditorialAction.Save, actor === SimulatedActor.Author)}
+            onclick={() => void execute(EditorialAction.Save)}>{t("ui.save")}</button
           >
           <button
             disabled={busy ||
               dirty ||
               retry !== null ||
-              !allowed("submit", actor === SimulatedActor.Author) ||
+              !allowed(EditorialAction.Submit, actor === SimulatedActor.Author) ||
               view.snapshot.contribution?.state !== ContributionState.Draft}
-            onclick={() => void execute("submit")}>{t("ui.submit")}</button
+            onclick={() => void execute(EditorialAction.Submit)}>{t("ui.submit")}</button
           >
         </div>
       </section>
@@ -274,34 +276,34 @@
             disabled={busy ||
               dirty ||
               retry !== null ||
-              !allowed("approve", actor === SimulatedActor.Reviewer) ||
+              !allowed(EditorialAction.Approve, actor === SimulatedActor.Reviewer) ||
               view.snapshot.contribution?.state !== ContributionState.InReview}
-            onclick={() => void execute("approve")}>{t("ui.approve")}</button
+            onclick={() => void execute(EditorialAction.Approve)}>{t("ui.approve")}</button
           >
           <button
             disabled={busy ||
               dirty ||
               retry !== null ||
-              !allowed("publish", actor === SimulatedActor.Reviewer) ||
+              !allowed(EditorialAction.Publish, actor === SimulatedActor.Reviewer) ||
               view.snapshot.contribution?.state !== ContributionState.Approved}
-            onclick={() => void execute("publish")}>{t("ui.publish")}</button
+            onclick={() => void execute(EditorialAction.Publish)}>{t("ui.publish")}</button
           >
           <button
             disabled={busy ||
               dirty ||
               retry !== null ||
-              !allowed("dismiss", true) ||
+              !allowed(EditorialAction.Dismiss, true) ||
               !view.snapshot.contribution ||
               !dismissibleStates.includes(view.snapshot.contribution.state)}
-            onclick={() => void execute("dismiss")}>{t("ui.dismiss")}</button
+            onclick={() => void execute(EditorialAction.Dismiss)}>{t("ui.dismiss")}</button
           >
           <button
             disabled={busy ||
               dirty ||
               retry !== null ||
-              !allowed("restore", true) ||
+              !allowed(EditorialAction.Restore, true) ||
               view.snapshot.contribution?.state !== ContributionState.Dismissed}
-            onclick={() => void execute("restore")}>{t("ui.restore")}</button
+            onclick={() => void execute(EditorialAction.Restore)}>{t("ui.restore")}</button
           >
         </div>
       </section>

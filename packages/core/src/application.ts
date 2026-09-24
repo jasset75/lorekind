@@ -1,4 +1,5 @@
-import { authorize } from "./authorization";
+import { EditorialAction } from "./actions";
+import { authorize, Capability } from "./authorization";
 import { createDraft, reconcilePublication, transitionContribution } from "./workflow";
 import type { Contribution, Transition, WorkflowContext, WorkflowResult } from "./workflow";
 
@@ -80,10 +81,9 @@ export type EvaluationCommand = {
   readonly proposalId?: string;
   readonly mode?: "create" | "update";
 } & (
-  | { readonly action: "save"; readonly content: Content }
+  | { readonly action: typeof EditorialAction.Save; readonly content: Content }
   | {
-      readonly action:
-        "submit" | "approve" | "authorize-direct" | "publish" | "dismiss" | "restore";
+      readonly action: Exclude<EditorialAction, typeof EditorialAction.Save>;
     }
 );
 
@@ -160,7 +160,7 @@ export class EditorialWorkspace {
       !authorize(context.grants, {
         principalId: context.principalId,
         foldId: this.profile.id,
-        capability: "entry:read",
+        capability: Capability.EntryRead,
         now: context.now,
         resourceId: this.profile.id,
       }).allowed ||
@@ -238,14 +238,14 @@ export class EditorialWorkspace {
       let proposalId = currentId;
       let baseContent = snapshot.baseContent;
       let previousProposals = snapshot.previousProposals ?? [];
-      if (command.action === "save" && creating) {
+      if (command.action === EditorialAction.Save && creating) {
         previousProposals = savedProposals(snapshot);
         proposalId = crypto.randomUUID();
         baseContent = snapshot.canonical;
       }
       let draft = snapshot.draft;
       let transition: Transition;
-      if (command.action === "save") {
+      if (command.action === EditorialAction.Save) {
         this.validate(command.content);
         const contentRevision = await contentDigest(command.content);
         transition =
@@ -276,7 +276,9 @@ export class EditorialWorkspace {
             {
               action: command.action,
               expectedVersion: snapshot.contribution.version,
-              ...(command.action === "publish" ? { attemptId: crypto.randomUUID() } : {}),
+              ...(command.action === EditorialAction.Publish
+                ? { attemptId: crypto.randomUUID() }
+                : {}),
             } as Parameters<typeof transitionContribution>[1],
             context,
           ),
@@ -286,7 +288,7 @@ export class EditorialWorkspace {
       let canonical = snapshot.canonical;
       let canonicalRevision = snapshot.canonicalRevision;
       const audit = [...snapshot.audit, transition.audit];
-      if (command.action === "publish") {
+      if (command.action === EditorialAction.Publish) {
         const attemptId = contribution.publicationAttemptId!;
         const applied = reconcilePublication(contribution, {
           expectedVersion: contribution.version,

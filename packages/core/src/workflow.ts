@@ -1,5 +1,6 @@
-import { authorize } from "./authorization";
-import type { Capability, Delegation, FoldGrant, ReviewPolicy } from "./authorization";
+import { EditorialAction } from "./actions";
+import { authorize, Capability } from "./authorization";
+import type { Delegation, FoldGrant, ReviewPolicy } from "./authorization";
 
 export const ContributionState = {
   Draft: "Draft",
@@ -66,9 +67,14 @@ export interface WorkflowContext {
 export type WorkflowCommand = {
   readonly expectedVersion: number;
 } & (
-  | { readonly action: "submit" | "approve" | "authorize-direct" | "dismiss" | "restore" }
+  | {
+      readonly action: Exclude<
+        EditorialAction,
+        typeof EditorialAction.Save | typeof EditorialAction.Publish
+      >;
+    }
   | { readonly action: "revise"; readonly contentRevision: string }
-  | { readonly action: "publish"; readonly attemptId: string }
+  | { readonly action: typeof EditorialAction.Publish; readonly attemptId: string }
 );
 
 export interface Transition {
@@ -168,7 +174,7 @@ function approvalIsCurrent(
       // Explicitly remove the calling actor's delegation when rechecking another actor.
       ...(delegationId === undefined ? {} : { delegationId }),
     },
-    approval.kind === "direct" ? "entry:publish" : "entry:review",
+    approval.kind === "direct" ? Capability.EntryPublish : Capability.EntryReview,
   );
   return identity !== undefined;
 }
@@ -226,7 +232,7 @@ export function createDraft(
     scope,
     approvals: [],
   };
-  const identity = identityFor(contribution, context, "entry:create");
+  const identity = identityFor(contribution, context, Capability.EntryCreate);
   return identity === undefined
     ? { ok: false, error: "forbidden" }
     : success(contribution, "create", identity, context.now);
@@ -239,16 +245,18 @@ export function transitionContribution(
   context: WorkflowContext,
 ): WorkflowResult {
   const capability: Capability =
-    command.action === "approve"
-      ? "entry:review"
-      : command.action === "publish" || command.action === "authorize-direct"
-        ? "entry:publish"
-        : command.action === "submit"
-          ? "entry:submit"
-          : (command.action === "dismiss" || command.action === "restore") &&
+    command.action === EditorialAction.Approve
+      ? Capability.EntryReview
+      : command.action === EditorialAction.Publish ||
+          command.action === EditorialAction.AuthorizeDirect
+        ? Capability.EntryPublish
+        : command.action === EditorialAction.Submit
+          ? Capability.EntrySubmit
+          : (command.action === EditorialAction.Dismiss ||
+                command.action === EditorialAction.Restore) &&
               contribution.authorPrincipalId !== context.principalId
-            ? "entry:dismiss"
-            : "entry:edit-own";
+            ? Capability.EntryDismiss
+            : Capability.EntryEditOwn;
   const identity = identityFor(contribution, context, capability);
   if (identity === undefined) return { ok: false, error: "forbidden" };
   if (command.expectedVersion !== contribution.version) return { ok: false, error: "conflict" };
@@ -269,15 +277,15 @@ export function transitionContribution(
       approvals = [];
       state = "Draft";
       break;
-    case "submit":
+    case EditorialAction.Submit:
       if (state !== "Draft" || context.policy.mode !== "independent")
         return { ok: false, error: "invalid-transition" };
       if (!sameScope(scope, currentScope)) return { ok: false, error: "stale-review" };
       state = "InReview";
       break;
-    case "approve":
-    case "authorize-direct": {
-      const direct = command.action === "authorize-direct";
+    case EditorialAction.Approve:
+    case EditorialAction.AuthorizeDirect: {
+      const direct = command.action === EditorialAction.AuthorizeDirect;
       if (
         direct
           ? state !== "Draft" || context.policy.mode !== "direct"
@@ -292,7 +300,7 @@ export function transitionContribution(
       state = hasApprovals(approvals, context.policy) ? "Approved" : "InReview";
       break;
     }
-    case "publish":
+    case EditorialAction.Publish:
       if (state !== "Approved" && state !== "PublicationFailed")
         return { ok: false, error: "invalid-transition" };
       if (!sameScope(scope, currentScope)) return { ok: false, error: "stale-review" };
@@ -303,13 +311,13 @@ export function transitionContribution(
       publicationAttemptId = command.attemptId;
       state = "Publishing";
       break;
-    case "dismiss":
+    case EditorialAction.Dismiss:
       if (!["Draft", "InReview", "Approved", "PublicationFailed"].includes(state))
         return { ok: false, error: "invalid-transition" };
       state = "Dismissed";
       approvals = [];
       break;
-    case "restore":
+    case EditorialAction.Restore:
       if (state !== "Dismissed") return { ok: false, error: "invalid-transition" };
       state = "Draft";
       approvals = [];
