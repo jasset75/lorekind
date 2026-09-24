@@ -1,3 +1,4 @@
+import { SimulatedActor } from "../../simulated-actors";
 import { EditorialWorkspace } from "@lorekind/core";
 import type { EvaluationStore, WorkspaceSnapshot } from "@lorekind/core";
 import { createEditorialApi } from "../editorial-api";
@@ -33,9 +34,9 @@ export function createRuntimeFixture() {
     authenticate: async (request) => {
       const token = request.headers.get("authorization");
       return token === "Bearer fixture-author"
-        ? { id: "author" }
+        ? { id: SimulatedActor.Author }
         : token === "Bearer fixture-reviewer"
-          ? { id: "reviewer" }
+          ? { id: SimulatedActor.Reviewer }
           : null;
     },
     workspaces: async () => [app],

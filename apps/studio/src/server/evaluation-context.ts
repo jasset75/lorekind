@@ -1,3 +1,4 @@
+import { SimulatedActor } from "../simulated-actors";
 import { createGrant, FoldRole, ReviewMode } from "@lorekind/core";
 import type { EditorialWorkspace, WorkflowContext } from "@lorekind/core";
 
@@ -8,19 +9,19 @@ export function evaluationContext(app: EditorialWorkspace, principalId: string):
     grants: [
       createGrant({
         id: "author",
-        principalId: "author",
+        principalId: SimulatedActor.Author,
         foldId: app.profile.id,
         role: FoldRole.Creator,
       }),
       createGrant({
         id: "curation",
-        principalId: "reviewer",
+        principalId: SimulatedActor.Reviewer,
         foldId: app.profile.id,
         role: FoldRole.Curator,
       }),
       createGrant({
         id: "reviewer",
-        principalId: "reviewer",
+        principalId: SimulatedActor.Reviewer,
         foldId: app.profile.id,
         role: FoldRole.Publisher,
       }),
