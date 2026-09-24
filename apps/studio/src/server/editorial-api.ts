@@ -1,9 +1,11 @@
+import { ApiErrorCode } from "../api-errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context, MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
 import { languageDetector } from "hono/language";
 import {
+  EditorialErrorCode,
   EditorialAction,
   contentDiff,
   contentDigest,
@@ -78,9 +80,9 @@ async function readJson(request: Request): Promise<unknown> {
       request.headers.get("content-type") ?? "",
     )
   )
-    throw new EditorialError("media-type");
+    throw new EditorialError(ApiErrorCode.MediaType);
   const reader = request.body?.getReader();
-  if (!reader) throw new EditorialError("invalid-input");
+  if (!reader) throw new EditorialError(EditorialErrorCode.InvalidInput);
   const chunks: Uint8Array[] = [];
   let length = 0;
   try {
@@ -90,7 +92,7 @@ async function readJson(request: Request): Promise<unknown> {
       length += item.value.length;
       if (length > MAX_API_BODY) {
         await reader.cancel();
-        throw new EditorialError("too-large");
+        throw new EditorialError(ApiErrorCode.TooLarge);
       }
       chunks.push(item.value);
     }
@@ -106,20 +108,20 @@ async function readJson(request: Request): Promise<unknown> {
   try {
     return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
   } catch {
-    throw new EditorialError("invalid-json");
+    throw new EditorialError(EditorialErrorCode.InvalidJson);
   }
 }
 function preconditions(request: Request) {
   const match = request.headers.get("if-match");
-  if (!match) throw new EditorialError("precondition-required");
+  if (!match) throw new EditorialError(ApiErrorCode.PreconditionRequired);
   if (!mutationHeaders.shape["if-match"].safeParse(match).success)
-    throw new EditorialError("invalid-precondition");
+    throw new EditorialError(ApiErrorCode.InvalidPrecondition);
   const expectedRevision = Number(match.slice(2, -1));
   const key = mutationHeaders.shape["idempotency-key"].safeParse(
     request.headers.get("idempotency-key"),
   );
   if (!Number.isSafeInteger(expectedRevision) || !key.success)
-    throw new EditorialError("invalid-input");
+    throw new EditorialError(EditorialErrorCode.InvalidInput);
   return { key: key.data, expectedRevision };
 }
 function version(c: Context<ApiEnv>) {
@@ -145,7 +147,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
                 : undefined;
         return fail(
           400,
-          "invalid-input",
+          EditorialErrorCode.InvalidInput,
           [],
           {},
           zodIssues(result.error.issues, locale(c.get("language")), source),
@@ -155,30 +157,33 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
   });
   const versioned = api.basePath(API_V1_BASE_PATH);
   api.onError((error) => {
-    if (error instanceof URIError) return fail(400, "invalid-path");
+    if (error instanceof URIError) return fail(400, ApiErrorCode.InvalidPath);
     if (error instanceof HTTPException)
-      return fail(error.status, error.status === 415 ? "media-type" : "invalid-json");
+      return fail(
+        error.status,
+        error.status === 415 ? ApiErrorCode.MediaType : EditorialErrorCode.InvalidJson,
+      );
     if (error instanceof EditorialError) {
       const statuses: Record<string, number> = {
-        forbidden: 403,
-        "precondition-required": 428,
-        conflict: 412,
-        "invalid-precondition": 400,
-        "invalid-input": 400,
-        "invalid-json": 400,
-        "media-type": 415,
-        "too-large": 413,
-        validation: 422,
-        "store-busy": 503,
-        "corrupt-store": 500,
-        "identity-mismatch": 500,
-        "profile-mismatch": 500,
+        [EditorialErrorCode.Forbidden]: 403,
+        [ApiErrorCode.PreconditionRequired]: 428,
+        [EditorialErrorCode.Conflict]: 412,
+        [ApiErrorCode.InvalidPrecondition]: 400,
+        [EditorialErrorCode.InvalidInput]: 400,
+        [EditorialErrorCode.InvalidJson]: 400,
+        [ApiErrorCode.MediaType]: 415,
+        [ApiErrorCode.TooLarge]: 413,
+        [EditorialErrorCode.Validation]: 422,
+        [EditorialErrorCode.StoreBusy]: 503,
+        [EditorialErrorCode.CorruptStore]: 500,
+        [ApiErrorCode.IdentityMismatch]: 500,
+        [EditorialErrorCode.ProfileMismatch]: 500,
       };
       return fail(statuses[error.code] ?? 409, error.code, [], {}, error.issues);
     }
-    return fail(500, "internal-error");
+    return fail(500, ApiErrorCode.InternalError);
   });
-  api.notFound(() => fail(404, "not-found"));
+  api.notFound(() => fail(404, ApiErrorCode.NotFound));
   versioned.use(
     "*",
     languageDetector({
@@ -219,38 +224,42 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
   versioned.use("*", async (c, next) => {
     c.header("Cache-Control", "no-store");
     const url = new URL(c.req.url);
-    if (!url.pathname.startsWith(`${API_V1_BASE_PATH}/`)) return fail(404, "not-found");
-    if (url.search) return fail(400, "unsupported-query");
+    if (!url.pathname.startsWith(`${API_V1_BASE_PATH}/`)) return fail(404, ApiErrorCode.NotFound);
+    if (url.search) return fail(400, ApiErrorCode.UnsupportedQuery);
     const segments = url.pathname
       .slice(API_V1_BASE_PATH.length + 1)
       .split("/")
       .map(decodeURIComponent);
     if (segments.some((segment) => !segment || segment.includes("/") || segment.includes("\\")))
-      return fail(404, "not-found");
+      return fail(404, ApiErrorCode.NotFound);
     await next();
     // Hono dispatches HEAD through GET. Keep access/resource checks, then reject
     // the implicit success because this experimental contract only exposes GET.
     if (c.req.method === "HEAD" && c.res.ok) {
-      c.res = fail(405, "method-not-allowed", [], {
+      c.res = fail(405, ApiErrorCode.MethodNotAllowed, [], {
         Allow: (allowed.get(routePath(c).slice(API_V1_BASE_PATH.length)) ?? ["GET"]).join(", "),
       });
     }
   });
   versioned.get("/openapi.json", (c) => c.json(openapi));
-  versioned.all("/openapi.json", () => fail(405, "method-not-allowed", [], { Allow: "GET" }));
+  versioned.all("/openapi.json", () =>
+    fail(405, ApiErrorCode.MethodNotAllowed, [], { Allow: "GET" }),
+  );
   versioned.use("/*", async (c, next) => {
     const principal = await services.authenticate(c.req.raw);
     if (principal === null)
-      return fail(401, "unauthenticated", [], { "WWW-Authenticate": "Bearer" });
+      return fail(401, ApiErrorCode.Unauthenticated, [], { "WWW-Authenticate": "Bearer" });
     c.set("principal", principal);
     const accessible: Accessible[] = [];
     for (const app of await services.workspaces(principal)) {
       const context = await services.context(principal, app);
-      if (context.principalId !== principal.id) throw new EditorialError("identity-mismatch");
+      if (context.principalId !== principal.id)
+        throw new EditorialError(ApiErrorCode.IdentityMismatch);
       try {
         accessible.push({ app, context, snapshot: await app.read(context) });
       } catch (error) {
-        if (!(error instanceof EditorialError && error.code === "forbidden")) throw error;
+        if (!(error instanceof EditorialError && error.code === EditorialErrorCode.Forbidden))
+          throw error;
       }
     }
     c.set("accessible", accessible);
@@ -260,7 +269,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     const selected = c
       .get("accessible")
       .find(({ app }) => app.profile.id === c.req.param("foldId"));
-    if (!selected) return fail(404, "not-found");
+    if (!selected) return fail(404, ApiErrorCode.NotFound);
     c.set("selected", selected);
     await next();
   };
@@ -268,7 +277,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     const proposal = savedProposals(c.get("selected").snapshot).find(
       (item) => item.id === c.req.param("proposalId"),
     );
-    if (!proposal) return fail(404, "not-found");
+    if (!proposal) return fail(404, ApiErrorCode.NotFound);
     c.set("proposal", proposal);
     await next();
   };
@@ -366,7 +375,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
   versioned.openapi({ ...routes.entry, middleware: workspace }, (c) => {
     const { app, snapshot } = c.get("selected");
     if (c.req.valid("param").entryId !== app.profile.id)
-      return c.json({ error: { code: "not-found", details: [] } }, 404);
+      return c.json({ error: { code: ApiErrorCode.NotFound, details: [] } }, 404);
     version(c);
     return c.json(
       responses.entry.parse({
@@ -409,7 +418,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     async (c) => {
       const input = c.req.valid("json");
       if (input.entryId !== c.get("selected").app.profile.id)
-        throw new EditorialError("invalid-input");
+        throw new EditorialError(EditorialErrorCode.InvalidInput);
       return c.json(
         await execute(c, {
           ...c.get("conditions"),
@@ -454,7 +463,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
   versioned.openapi({ ...routes.diff, middleware: proposal }, (c) => {
     const item = c.get("proposal");
     if (item.baseContent === null)
-      return c.json({ error: { code: "diff-unavailable", details: [] } }, 409);
+      return c.json({ error: { code: ApiErrorCode.DiffUnavailable, details: [] } }, 409);
     version(c);
     return c.json(
       responses.diff.parse({ changes: contentDiff(item.baseContent, item.content) }),
@@ -483,7 +492,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
           );
       }
     }
-    return c.json({ error: { code: "not-found", details: [] } }, 404);
+    return c.json({ error: { code: ApiErrorCode.NotFound, details: [] } }, 404);
   });
   for (const { action, route } of actionRoutes) {
     versioned.openapi({ ...route, middleware: mutation }, async (c) =>
@@ -510,7 +519,9 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
         ? workspace
         : [];
     for (const middleware of scope) versioned.use(path, middleware);
-    versioned.all(path, () => fail(405, "method-not-allowed", [], { Allow: methods.join(", ") }));
+    versioned.all(path, () =>
+      fail(405, ApiErrorCode.MethodNotAllowed, [], { Allow: methods.join(", ") }),
+    );
   }
   return async (request) => {
     const headers = new Headers(request.headers);

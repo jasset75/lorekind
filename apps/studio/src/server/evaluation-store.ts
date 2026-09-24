@@ -1,6 +1,6 @@
 import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import { dirname } from "node:path";
-import { EditorialError } from "@lorekind/core";
+import { EditorialErrorCode, EditorialError } from "@lorekind/core";
 import type { EvaluationStore, WorkspaceSnapshot } from "@lorekind/core";
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -22,14 +22,14 @@ export function decodeSnapshot(text: string): WorkspaceSnapshot {
     !Array.isArray(value.audit) ||
     !Array.isArray(value.operations)
   )
-    throw new EditorialError("corrupt-store");
+    throw new EditorialError(EditorialErrorCode.CorruptStore);
   if (
     (value.proposalId !== undefined &&
       (typeof value.proposalId !== "string" || !value.proposalId)) ||
     (value.baseContent !== undefined && !isObject(value.baseContent)) ||
     (value.previousProposals !== undefined && !Array.isArray(value.previousProposals))
   )
-    throw new EditorialError("corrupt-store");
+    throw new EditorialError(EditorialErrorCode.CorruptStore);
   for (const previous of (value.previousProposals ?? []) as unknown[]) {
     if (
       !isObject(previous) ||
@@ -40,7 +40,7 @@ export function decodeSnapshot(text: string): WorkspaceSnapshot {
       !Array.isArray(previous.audit) ||
       !isObject(previous.contribution)
     )
-      throw new EditorialError("corrupt-store");
+      throw new EditorialError(EditorialErrorCode.CorruptStore);
     decodeSnapshot(
       JSON.stringify({
         formatVersion: 1,
@@ -90,7 +90,7 @@ export function decodeSnapshot(text: string): WorkspaceSnapshot {
           typeof approval.identity.grantId === "string",
       )
     )
-      throw new EditorialError("corrupt-store");
+      throw new EditorialError(EditorialErrorCode.CorruptStore);
   }
   if (
     !value.operations.every(
@@ -105,7 +105,7 @@ export function decodeSnapshot(text: string): WorkspaceSnapshot {
         Number.isSafeInteger(operation.receipt.revision),
     )
   )
-    throw new EditorialError("corrupt-store");
+    throw new EditorialError(EditorialErrorCode.CorruptStore);
   return value as unknown as WorkspaceSnapshot;
 }
 
@@ -131,7 +131,7 @@ export class FileEvaluationStore implements EvaluationStore {
       await mkdir(lock);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "EEXIST")
-        throw new EditorialError("store-busy");
+        throw new EditorialError(EditorialErrorCode.StoreBusy);
       throw error;
     }
     const temporary = `${this.filename}.${crypto.randomUUID()}.tmp`;
