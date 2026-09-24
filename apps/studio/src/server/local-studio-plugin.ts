@@ -1,3 +1,4 @@
+import { StudioMode } from "../studio-mode";
 import { SimulatedActor } from "../simulated-actors";
 import { ApiErrorCode } from "../api-errors";
 import { resolve } from "node:path";
@@ -34,8 +35,8 @@ export function localStudioPlugin(): Plugin {
     apply: "serve",
     configureServer(server) {
       const config = localStudioConfig(process.env);
-      const workspaces: Partial<Record<"studio" | "api", Promise<EditorialWorkspace>>> = {};
-      const loadWorkspace = (mode: "studio" | "api" = "studio") =>
+      const workspaces: Partial<Record<StudioMode, Promise<EditorialWorkspace>>> = {};
+      const loadWorkspace = (mode: StudioMode = StudioMode.Local) =>
         (workspaces[mode] ??= (async () => {
           const modulePath = config.profilePath;
           const profile: ContentProfile = modulePath
@@ -46,7 +47,7 @@ export function localStudioPlugin(): Plugin {
             config.dataRoot ?? fileURLToPath(new URL("../../../../.evaluation/", import.meta.url));
           return new EditorialWorkspace(
             new FileEvaluationStore(
-              resolve(dataRoot, `${mode === "api" ? "api-" : ""}${profile.id}.json`),
+              resolve(dataRoot, `${mode === StudioMode.Api ? "api-" : ""}${profile.id}.json`),
             ),
             profile,
           );
@@ -61,7 +62,7 @@ export function localStudioPlugin(): Plugin {
               ? { [SimulatedActor.Reviewer]: process.env.LOREKIND_API_REVIEWER_TOKEN }
               : {}),
           }),
-        workspaces: async () => [await loadWorkspace("api")],
+        workspaces: async () => [await loadWorkspace(StudioMode.Api)],
         context: async (principal, app) => evaluationContext(app, principal.id),
       });
       server.middlewares.use(async (request, response, next) => {

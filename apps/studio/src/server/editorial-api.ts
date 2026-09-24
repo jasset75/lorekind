@@ -35,7 +35,7 @@ import {
 import { openapi } from "./openapi";
 import { API_V1_BASE_PATH } from "./api-paths";
 import { acceptedLanguages, zodIssues } from "./api-i18n";
-import { locale, errorMessage, issueMessage, label } from "../i18n";
+import { Locale, locale, errorMessage, issueMessage, label } from "../i18n";
 
 export interface ApiPrincipal {
   readonly id: string;
@@ -190,8 +190,8 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
   versioned.use(
     "*",
     languageDetector({
-      supportedLanguages: ["en", "es"],
-      fallbackLanguage: "en",
+      supportedLanguages: [Locale.English, Locale.Spanish],
+      fallbackLanguage: Locale.English,
       order: ["header"],
       caches: false,
     }),
@@ -200,7 +200,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     await next();
     // The generated document is invariant and remains English, even for Spanish clients.
     if (c.req.path === `${API_V1_BASE_PATH}/openapi.json` && c.res.ok) {
-      c.header("Content-Language", "en");
+      c.header("Content-Language", Locale.English);
       return;
     }
     const language = locale(c.get("language"));

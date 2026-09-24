@@ -7,10 +7,10 @@
   import { ContributionState, EditorialAction } from "@lorekind/core";
   import type { Contribution, ValidationIssue } from "@lorekind/core";
   import { translate, label, errorMessage, issueMessage } from "../i18n";
-  import type { Locale } from "../i18n";
+  import { Locale } from "../i18n";
   import type { MessageKey } from "../i18n/catalogs";
   let {
-    initialLocale = "es",
+    initialLocale = Locale.Spanish,
     apiMode = false,
     apiBasePath,
   }: { initialLocale?: Locale; apiMode?: boolean; apiBasePath: string } = $props();
@@ -166,8 +166,8 @@
     <label
       >{t("ui.language")}
       <select bind:value={language}>
-        <option value="es" lang="es">Español</option>
-        <option value="en" lang="en">English</option>
+        <option value={Locale.Spanish} lang={Locale.Spanish}>Español</option>
+        <option value={Locale.English} lang={Locale.English}>English</option>
       </select>
     </label>
     {#if !apiMode}
