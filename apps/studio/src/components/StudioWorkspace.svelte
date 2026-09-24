@@ -3,6 +3,7 @@
   import type { ApiTarget, StudioCommand } from "../client/editorial-client";
   import { onMount } from "svelte";
   import ThemeSwitcher from "./ThemeSwitcher.svelte";
+  import { ContributionState } from "@lorekind/core";
   import type { Contribution, ValidationIssue } from "@lorekind/core";
   import { translate, label, errorMessage, issueMessage } from "../i18n";
   import type { Locale } from "../i18n";
@@ -19,6 +20,11 @@
   type Field = { key: string; label: string; labelKey?: string; multiline?: boolean };
   const SimulatedActor = { Author: "author", Reviewer: "reviewer" } as const;
   type SimulatedActor = (typeof SimulatedActor)[keyof typeof SimulatedActor];
+  const dismissibleStates: readonly ContributionState[] = [
+    ContributionState.Draft,
+    ContributionState.InReview,
+    ContributionState.Approved,
+  ];
   type View = {
     target?: ApiTarget;
     allowed?: Record<string, boolean>;
@@ -243,7 +249,7 @@
               dirty ||
               retry !== null ||
               !allowed("submit", actor === SimulatedActor.Author) ||
-              view.snapshot.contribution?.state !== "Draft"}
+              view.snapshot.contribution?.state !== ContributionState.Draft}
             onclick={() => void execute("submit")}>{t("ui.submit")}</button
           >
         </div>
@@ -269,7 +275,7 @@
               dirty ||
               retry !== null ||
               !allowed("approve", actor === SimulatedActor.Reviewer) ||
-              view.snapshot.contribution?.state !== "InReview"}
+              view.snapshot.contribution?.state !== ContributionState.InReview}
             onclick={() => void execute("approve")}>{t("ui.approve")}</button
           >
           <button
@@ -277,7 +283,7 @@
               dirty ||
               retry !== null ||
               !allowed("publish", actor === SimulatedActor.Reviewer) ||
-              view.snapshot.contribution?.state !== "Approved"}
+              view.snapshot.contribution?.state !== ContributionState.Approved}
             onclick={() => void execute("publish")}>{t("ui.publish")}</button
           >
           <button
@@ -285,7 +291,8 @@
               dirty ||
               retry !== null ||
               !allowed("dismiss", true) ||
-              !["Draft", "InReview", "Approved"].includes(view.snapshot.contribution?.state ?? "")}
+              !view.snapshot.contribution ||
+              !dismissibleStates.includes(view.snapshot.contribution.state)}
             onclick={() => void execute("dismiss")}>{t("ui.dismiss")}</button
           >
           <button
@@ -293,7 +300,7 @@
               dirty ||
               retry !== null ||
               !allowed("restore", true) ||
-              view.snapshot.contribution?.state !== "Dismissed"}
+              view.snapshot.contribution?.state !== ContributionState.Dismissed}
             onclick={() => void execute("restore")}>{t("ui.restore")}</button
           >
         </div>

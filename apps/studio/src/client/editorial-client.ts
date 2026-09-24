@@ -1,3 +1,4 @@
+import { ContributionState } from "@lorekind/core";
 import type { z } from "zod";
 import type { responses } from "../server/api-contract";
 
@@ -76,7 +77,7 @@ export function editorialClient(
       const contribution = proposal?.body.contribution ?? null;
       const own = contribution?.authorPrincipalId === identity.principalId;
       const can = (capability: string) => scope.capabilities.includes(capability);
-      const fresh = !contribution || contribution.state === "Applied";
+      const fresh = !contribution || contribution.state === ContributionState.Applied;
       return {
         target: {
           foldId: fold.id,
