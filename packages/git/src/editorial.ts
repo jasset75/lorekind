@@ -1,14 +1,29 @@
 import type { FileChange, RepositoryRef } from "./index";
 
+export const ProviderGuarantee = {
+  ConditionalWrite: "conditional-write",
+  DurableOperationRecovery: "durable-operation-recovery",
+  PayloadBoundIdempotency: "payload-bound-idempotency",
+  ReviewedRevisionIntegration: "reviewed-revision-integration",
+  ServerOwnedRecords: "server-owned-records",
+} as const;
+export type ProviderGuarantee = (typeof ProviderGuarantee)[keyof typeof ProviderGuarantee];
+
 /** Experimental v1; remote feasibility and conformance are still pending. */
 export const mandatoryGuarantees = [
-  "conditional-write",
-  "durable-operation-recovery",
-  "payload-bound-idempotency",
-  "reviewed-revision-integration",
-  "server-owned-records",
+  ProviderGuarantee.ConditionalWrite,
+  ProviderGuarantee.DurableOperationRecovery,
+  ProviderGuarantee.PayloadBoundIdempotency,
+  ProviderGuarantee.ReviewedRevisionIntegration,
+  ProviderGuarantee.ServerOwnedRecords,
 ] as const;
-export type ProviderGuarantee = (typeof mandatoryGuarantees)[number];
+
+export const GitOperationAction = {
+  Save: "save",
+  Submit: "submit",
+  Publish: "publish",
+} as const;
+export type GitOperationAction = (typeof GitOperationAction)[keyof typeof GitOperationAction];
 
 export interface OperationBinding {
   readonly formatVersion: 1;
@@ -18,29 +33,42 @@ export interface OperationBinding {
   readonly foldId: string;
   readonly repository: RepositoryRef;
   readonly resourceId: string;
-  readonly action: "save" | "submit" | "publish";
+  readonly action: GitOperationAction;
   /** Computed by the trusted application over the complete normalized command. */
   readonly payloadDigest: string;
 }
 
-export type ProviderError =
-  | "conflict"
-  | "idempotency-conflict"
-  | "unsupported-guarantee"
-  | "forbidden"
-  | "not-found"
-  | "invalid-input"
-  | "provider-failure";
+export const ProviderError = {
+  Conflict: "conflict",
+  IdempotencyConflict: "idempotency-conflict",
+  UnsupportedGuarantee: "unsupported-guarantee",
+  Forbidden: "forbidden",
+  NotFound: "not-found",
+  InvalidInput: "invalid-input",
+  ProviderFailure: "provider-failure",
+} as const;
+export type ProviderError = (typeof ProviderError)[keyof typeof ProviderError];
+
+export const OperationStatus = {
+  Pending: "pending",
+  Completed: "completed",
+  Failed: "failed",
+} as const;
+export type OperationStatus = (typeof OperationStatus)[keyof typeof OperationStatus];
 
 export type OperationResult =
-  | { readonly status: "pending"; readonly operationId: string }
+  | { readonly status: typeof OperationStatus.Pending; readonly operationId: string }
   | {
-      readonly status: "completed";
+      readonly status: typeof OperationStatus.Completed;
       readonly operationId: string;
       readonly revision: string;
       readonly changeRequestId?: string;
     }
-  | { readonly status: "failed"; readonly operationId: string; readonly error: ProviderError };
+  | {
+      readonly status: typeof OperationStatus.Failed;
+      readonly operationId: string;
+      readonly error: ProviderError;
+    };
 
 export interface RemoteSnapshot {
   readonly revision: string;
@@ -48,7 +76,7 @@ export interface RemoteSnapshot {
 }
 
 export interface SaveCheckpoint {
-  readonly action: "save";
+  readonly action: typeof GitOperationAction.Save;
   readonly branch: string;
   /** null means create only if absent; it never means unconditional overwrite. */
   readonly expectedRevision: string | null;
@@ -58,7 +86,7 @@ export interface SaveCheckpoint {
 }
 
 export interface SubmitProposal {
-  readonly action: "submit";
+  readonly action: typeof GitOperationAction.Submit;
   readonly sourceBranch: string;
   readonly sourceRevision: string;
   readonly targetBranch: string;
@@ -66,7 +94,7 @@ export interface SubmitProposal {
 }
 
 export interface PublishProposal {
-  readonly action: "publish";
+  readonly action: typeof GitOperationAction.Publish;
   readonly changeRequestId: string;
   readonly reviewedSourceRevision: string;
   readonly expectedTargetRevision: string;
