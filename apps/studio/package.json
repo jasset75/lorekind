@@ -1,7 +1,6 @@
 {
   "name": "@lorekind/studio",
   "version": "0.0.0",
-  "private": true,
   "type": "module",
   "scripts": {
     "dev": "astro dev",
@@ -19,5 +18,29 @@
     "jose": "6.1.3",
     "svelte": "5.56.10",
     "zod": "4.5.4"
+  },
+  "files": [
+    "bin",
+    "src/client",
+    "src/components",
+    "src/i18n",
+    "src/layouts",
+    "src/pages",
+    "src/styles",
+    "src/api-errors.ts",
+    "src/simulated-actors.ts",
+    "src/studio-mode.ts",
+    "src/server/api-contract.ts"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "description": "Build the Lorekind Studio frontend for a same-origin editorial API",
+  "bin": {
+    "lorekind-studio-build": "./bin/build.mjs"
+  },
+  "engines": {
+    "node": ">=24.13.0"
   }
 }

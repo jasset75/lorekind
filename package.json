@@ -21,7 +21,8 @@
     "test:api:portability": "vitest run apps/studio/src/server/api-portability.test.ts",
     "openapi:generate": "node scripts/openapi.mjs",
     "openapi:check": "node scripts/openapi.mjs --check",
-    "check": "pnpm openapi:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm openapi:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "test:studio:package": "node scripts/studio-package-smoke.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
