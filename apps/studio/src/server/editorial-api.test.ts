@@ -321,3 +321,31 @@ describe("versioned editorial HTTP API", () => {
     expect(verifyConfiguredBearer(`Bearer ${credentials.author}`, {})).toBeNull();
   });
 });
+
+it("mounts only v1 and preserves versioned method handling and receipt links", async () => {
+  for (const path of ["/me", "/api/v2/me", "/api/v10/me", "/openapi.json"]) {
+    const response = await api(new Request(`http://localhost${path}`));
+    expect(response.status).toBe(404);
+    expect((await response.json()).error.code).toBe("not-found");
+  }
+  const denied = await call("/api/v1/me", { method: "POST", input: {} });
+  expect(denied.response.status).toBe(405);
+  expect(denied.response.headers.get("Allow")).toBe("GET");
+  const head = await api(
+    new Request(`http://localhost${root}/proposals`, {
+      method: "HEAD",
+      headers: { Authorization: `Bearer ${credentials.author}` },
+    }),
+  );
+  expect(head.status).toBe(405);
+  expect(head.headers.get("Allow")).toBe("GET, POST");
+  const created = await call(`${root}/proposals`, {
+    method: "POST",
+    input: { entryId: articleProfile.id, content },
+    revision: 0,
+    key: "mount-test",
+  });
+  const location = created.response.headers.get("Location")!;
+  expect(location).toBe(`/api/v1/operations/${created.data.operationId}`);
+  expect((await call(location)).response.status).toBe(200);
+});

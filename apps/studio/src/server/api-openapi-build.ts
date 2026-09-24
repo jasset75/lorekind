@@ -1,10 +1,11 @@
 // Build-time entry only. Requests serve the checked-in artifact via openapi.ts.
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { allRoutes, openapiConfig } from "./api-contract";
+import { API_V1_BASE_PATH } from "./api-paths";
 
 export function generateOpenApi() {
-  const document = new OpenAPIHono();
-  document.openAPIRegistry.registerComponent("securitySchemes", "bearerAuth", {
+  const version = new OpenAPIHono();
+  version.openAPIRegistry.registerComponent("securitySchemes", "bearerAuth", {
     type: "http",
     scheme: "bearer",
     description: "Verified by the deployment adapter. No identity in query/body.",
@@ -19,8 +20,9 @@ export function generateOpenApi() {
       schemas.push(response.content["application/json"].schema);
     }
     for (const schema of schemas) z.toJSONSchema(schema, { unrepresentable: "throw" });
-    document.openAPIRegistry.registerPath(route);
+    version.openAPIRegistry.registerPath(route);
   }
+  const document = new OpenAPIHono().route(API_V1_BASE_PATH, version);
   const generated = document.getOpenAPI31Document(openapiConfig);
   // Header metadata is shared by the presentation middleware, not individual handlers.
   for (const path of Object.values(generated.paths ?? {})) {

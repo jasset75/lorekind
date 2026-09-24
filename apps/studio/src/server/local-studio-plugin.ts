@@ -8,6 +8,7 @@ import { FileEvaluationStore } from "./evaluation-store";
 import { articleProfile } from "./evaluation-profile";
 import { evaluationContext } from "./evaluation-context";
 import { createEditorialApi } from "./editorial-api";
+import { API_V1_BASE_PATH } from "./api-paths";
 import { verifyConfiguredBearer } from "./api-auth";
 import { localStudioConfig } from "./local-studio-config";
 
@@ -49,7 +50,7 @@ export function localStudioPlugin(): Plugin {
         context: async (principal, app) => evaluationContext(app, principal.id),
       });
       server.middlewares.use(async (request, response, next) => {
-        if (!request.url?.startsWith("/api/v1/")) return next();
+        if (!request.url?.startsWith(`${API_V1_BASE_PATH}/`)) return next();
         const host = request.headers.host ?? "";
         if (
           !/^(localhost|127\.0\.0\.1):\d+$/.test(host) ||

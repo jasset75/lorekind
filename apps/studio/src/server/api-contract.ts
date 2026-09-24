@@ -222,8 +222,7 @@ const errors = {
   500: { description: "Internal error", content: json(error) },
   503: { description: "Local storage is busy", content: json(error) },
 };
-const base = "/api/v1";
-const fold = `${base}/folds/{foldId}`;
+const fold = "/folds/{foldId}";
 const proposal = `${fold}/proposals/{proposalId}`;
 const security = [{ bearerAuth: [] }];
 const languageHeaders = z.object({
@@ -244,7 +243,7 @@ function readRoute<P extends string, S extends z.ZodType, Q extends z.ZodObject>
     path,
     summary,
     security,
-    operationId: `get_${path.slice(8).replace(/[{}]/g, "").replace(/[/-]/g, "_")}`,
+    operationId: `get_${path.slice(1).replace(/[{}]/g, "").replace(/[/-]/g, "_")}`,
     request: { params, headers: languageHeaders },
     responses: {
       200: { description: summary, content: json(schema), ...(versioned ? { headers: etag } : {}) },
@@ -276,7 +275,7 @@ function writeRoute<
     path,
     summary,
     security,
-    operationId: `${method}_${path.slice(8).replace(/[{}]/g, "").replace(/[/-]/g, "_")}`,
+    operationId: `${method}_${path.slice(1).replace(/[{}]/g, "").replace(/[/-]/g, "_")}`,
     request: {
       params,
       headers: mutationHeaders.extend(languageHeaders.shape),
@@ -288,14 +287,14 @@ function writeRoute<
 
 export const routes = {
   me: readRoute(
-    `${base}/me`,
+    "/me",
     "Read verified identity and current scoped grant capabilities",
     responses.identity,
     z.object({}),
     false,
   ),
   folds: readRoute(
-    `${base}/folds`,
+    "/folds",
     "List accessible editorial spaces",
     responses.folds,
     z.object({}),
@@ -375,7 +374,7 @@ export const routes = {
     proposalParams,
   ),
   operation: readRoute(
-    `${base}/operations/{operationId}`,
+    "/operations/{operationId}",
     "Recover a persisted receipt; only its initiating principal can read it",
     responses.operation,
     z.object({ operationId: id }),

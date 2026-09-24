@@ -27,6 +27,7 @@ import {
   routes,
 } from "./api-contract";
 import { openapi } from "./openapi";
+import { API_V1_BASE_PATH } from "./api-paths";
 import { acceptedLanguages, zodIssues } from "./api-i18n";
 import { locale, errorMessage, issueMessage, label } from "../i18n";
 
@@ -151,6 +152,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       }
     },
   });
+  const versioned = api.basePath(API_V1_BASE_PATH);
   api.onError((error) => {
     if (error instanceof URIError) return fail(400, "invalid-path");
     if (error instanceof HTTPException)
@@ -176,7 +178,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     return fail(500, "internal-error");
   });
   api.notFound(() => fail(404, "not-found"));
-  api.use(
+  versioned.use(
     "*",
     languageDetector({
       supportedLanguages: ["en", "es"],
@@ -185,10 +187,10 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       caches: false,
     }),
   );
-  api.use("*", async (c, next) => {
+  versioned.use("*", async (c, next) => {
     await next();
     // The generated document is invariant and remains English, even for Spanish clients.
-    if (c.req.path === "/api/v1/openapi.json" && c.res.ok) {
+    if (c.req.path === `${API_V1_BASE_PATH}/openapi.json` && c.res.ok) {
       c.header("Content-Language", "en");
       return;
     }
@@ -213,12 +215,15 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       );
     }
   });
-  api.use("*", async (c, next) => {
+  versioned.use("*", async (c, next) => {
     c.header("Cache-Control", "no-store");
     const url = new URL(c.req.url);
-    if (!url.pathname.startsWith("/api/v1/")) return fail(404, "not-found");
+    if (!url.pathname.startsWith(`${API_V1_BASE_PATH}/`)) return fail(404, "not-found");
     if (url.search) return fail(400, "unsupported-query");
-    const segments = url.pathname.slice(8).split("/").map(decodeURIComponent);
+    const segments = url.pathname
+      .slice(API_V1_BASE_PATH.length + 1)
+      .split("/")
+      .map(decodeURIComponent);
     if (segments.some((segment) => !segment || segment.includes("/") || segment.includes("\\")))
       return fail(404, "not-found");
     await next();
@@ -226,13 +231,13 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     // the implicit success because this experimental contract only exposes GET.
     if (c.req.method === "HEAD" && c.res.ok) {
       c.res = fail(405, "method-not-allowed", [], {
-        Allow: (allowed.get(routePath(c)) ?? ["GET"]).join(", "),
+        Allow: (allowed.get(routePath(c).slice(API_V1_BASE_PATH.length)) ?? ["GET"]).join(", "),
       });
     }
   });
-  api.get("/api/v1/openapi.json", (c) => c.json(openapi));
-  api.all("/api/v1/openapi.json", () => fail(405, "method-not-allowed", [], { Allow: "GET" }));
-  api.use("/api/v1/*", async (c, next) => {
+  versioned.get("/openapi.json", (c) => c.json(openapi));
+  versioned.all("/openapi.json", () => fail(405, "method-not-allowed", [], { Allow: "GET" }));
+  versioned.use("/*", async (c, next) => {
     const principal = await services.authenticate(c.req.raw);
     if (principal === null)
       return fail(401, "unauthenticated", [], { "WWW-Authenticate": "Bearer" });
@@ -281,7 +286,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     const { app, context } = c.get("selected");
     const receipt = await app.execute(command, context);
     const operation = await operationId(c.get("principal").id, app.profile.id, receipt.key);
-    c.header("Location", `/api/v1/operations/${operation}`);
+    c.header("Location", `${API_V1_BASE_PATH}/operations/${operation}`);
     c.header("ETag", `"v${receipt.revision}"`);
     return responses.mutation.parse({
       operationId: operation,
@@ -289,7 +294,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       result: receipt,
     });
   }
-  api.openapi(routes.me, (c) =>
+  versioned.openapi(routes.me, (c) =>
     c.json(
       responses.identity.parse({
         principalId: c.get("principal").id,
@@ -314,7 +319,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     ),
   );
-  api.openapi(routes.folds, (c) =>
+  versioned.openapi(routes.folds, (c) =>
     c.json(
       responses.folds.parse({
         items: c.get("accessible").map(({ app }) => ({
@@ -325,7 +330,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     ),
   );
-  api.openapi({ ...routes.schemas, middleware: workspace }, (c) => {
+  versioned.openapi({ ...routes.schemas, middleware: workspace }, (c) => {
     const { app } = c.get("selected");
     version(c);
     return c.json(
@@ -345,7 +350,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     );
   });
-  api.openapi({ ...routes.entries, middleware: workspace }, (c) => {
+  versioned.openapi({ ...routes.entries, middleware: workspace }, (c) => {
     const { app, snapshot } = c.get("selected");
     version(c);
     return c.json(
@@ -357,7 +362,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     );
   });
-  api.openapi({ ...routes.entry, middleware: workspace }, (c) => {
+  versioned.openapi({ ...routes.entry, middleware: workspace }, (c) => {
     const { app, snapshot } = c.get("selected");
     if (c.req.valid("param").entryId !== app.profile.id)
       return c.json({ error: { code: "not-found", details: [] } }, 404);
@@ -371,7 +376,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     );
   });
-  api.openapi({ ...routes.proposals, middleware: workspace }, (c) => {
+  versioned.openapi({ ...routes.proposals, middleware: workspace }, (c) => {
     const { app, snapshot } = c.get("selected");
     version(c);
     return c.json(
@@ -385,7 +390,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     );
   });
-  api.openapi({ ...routes.proposal, middleware: proposal }, (c) => {
+  versioned.openapi({ ...routes.proposal, middleware: proposal }, (c) => {
     const item = c.get("proposal");
     version(c);
     return c.json(
@@ -398,21 +403,24 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     );
   });
-  api.openapi({ ...routes.create, middleware: [selectWorkspace, prepareMutation] }, async (c) => {
-    const input = c.req.valid("json");
-    if (input.entryId !== c.get("selected").app.profile.id)
-      throw new EditorialError("invalid-input");
-    return c.json(
-      await execute(c, {
-        ...c.get("conditions"),
-        action: "save",
-        mode: "create",
-        content: input.content,
-      }),
-      201,
-    );
-  });
-  api.openapi({ ...routes.update, middleware: mutation }, async (c) =>
+  versioned.openapi(
+    { ...routes.create, middleware: [selectWorkspace, prepareMutation] },
+    async (c) => {
+      const input = c.req.valid("json");
+      if (input.entryId !== c.get("selected").app.profile.id)
+        throw new EditorialError("invalid-input");
+      return c.json(
+        await execute(c, {
+          ...c.get("conditions"),
+          action: "save",
+          mode: "create",
+          content: input.content,
+        }),
+        201,
+      );
+    },
+  );
+  versioned.openapi({ ...routes.update, middleware: mutation }, async (c) =>
     c.json(
       await execute(c, {
         ...c.get("conditions"),
@@ -424,7 +432,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     ),
   );
-  api.openapi({ ...routes.validate, middleware: [...proposal, prepareBody] }, (c) => {
+  versioned.openapi({ ...routes.validate, middleware: [...proposal, prepareBody] }, (c) => {
     const { app } = c.get("selected");
     const errors = app.profile.validate(c.req.valid("json").content ?? c.get("proposal").content);
     const issues = validationIssues(errors).map((issue) => ({
@@ -442,7 +450,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     );
   });
-  api.openapi({ ...routes.diff, middleware: proposal }, (c) => {
+  versioned.openapi({ ...routes.diff, middleware: proposal }, (c) => {
     const item = c.get("proposal");
     if (item.baseContent === null)
       return c.json({ error: { code: "diff-unavailable", details: [] } }, 409);
@@ -452,11 +460,11 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       200,
     );
   });
-  api.openapi({ ...routes.history, middleware: proposal }, (c) => {
+  versioned.openapi({ ...routes.history, middleware: proposal }, (c) => {
     version(c);
     return c.json(responses.history.parse({ items: c.get("proposal").audit }), 200);
   });
-  api.openapi(routes.operation, async (c) => {
+  versioned.openapi(routes.operation, async (c) => {
     for (const { app, snapshot } of c.get("accessible")) {
       for (const operation of snapshot.operations) {
         if (
@@ -477,7 +485,7 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
     return c.json({ error: { code: "not-found", details: [] } }, 404);
   });
   for (const { action, route } of actionRoutes) {
-    api.openapi({ ...route, middleware: mutation }, async (c) =>
+    versioned.openapi({ ...route, middleware: mutation }, async (c) =>
       c.json(
         await execute(c, {
           ...c.get("conditions"),
@@ -500,8 +508,8 @@ export function createEditorialApi(services: ApiServices): (request: Request) =>
       : path.includes(":foldId")
         ? workspace
         : [];
-    for (const middleware of scope) api.use(path, middleware);
-    api.all(path, () => fail(405, "method-not-allowed", [], { Allow: methods.join(", ") }));
+    for (const middleware of scope) versioned.use(path, middleware);
+    versioned.all(path, () => fail(405, "method-not-allowed", [], { Allow: methods.join(", ") }));
   }
   return async (request) => {
     const headers = new Headers(request.headers);
