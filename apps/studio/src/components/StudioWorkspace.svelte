@@ -17,6 +17,7 @@
   const t = (key: MessageKey, params: ValidationIssue["params"] = {}) =>
     translate(language, key, params);
   type Field = { key: string; label: string; labelKey?: string; multiline?: boolean };
+  type SimulatedActor = "author" | "reviewer";
   type View = {
     target?: ApiTarget;
     allowed?: Record<string, boolean>;
@@ -31,7 +32,7 @@
     diff: { field: string; before: unknown; after: unknown }[];
   };
   let view = $state<View | null>(null);
-  let actor = $state("author");
+  let actor = $state<SimulatedActor>("author");
   let draft = $state<Record<string, unknown>>({});
   let messageKey = $state<MessageKey | null>(null);
   let failure = $state<{ code: string; issues: ValidationIssue[] } | null>(null);
@@ -46,7 +47,7 @@
   );
   let busy = $state(false);
   let dirty = $state(false);
-  let retry = $state<{ actor: string; command: StudioCommand } | null>(null);
+  let retry = $state<{ actor: SimulatedActor; command: StudioCommand } | null>(null);
   const fieldLabel = (field: Field) => label(language, field.labelKey, field.label);
   // Presentation-only changes: do not reload or overwrite an unsaved draft on language switch.
   $effect(() => {
