@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { EditorialWorkspace } from "@lorekind/core";
-import { editorialClient, type StudioCommand } from "../client/editorial-client";
+import { editorialClient, type StudioAction, type StudioCommand } from "../client/editorial-client";
 import { createBrowserEditorialApi } from "./browser-api";
 import { FileEvaluationStore } from "./evaluation-store";
 import { evaluationContext } from "./evaluation-context";
@@ -60,7 +60,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(directory, { recursive: true, force: true });
 });
-async function command(action: string): Promise<StudioCommand> {
+async function command(action: StudioAction): Promise<StudioCommand> {
   const view = await client.load();
   return {
     action,

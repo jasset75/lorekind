@@ -1,12 +1,16 @@
-import { ContributionState } from "@lorekind/core";
+import { ContributionState, EditorialAction, Capability } from "@lorekind/core";
 import type { z } from "zod";
 import type { responses } from "../server/api-contract";
 
 type Result<K extends keyof typeof responses> = z.infer<(typeof responses)[K]>;
 export type ApiTarget = { foldId: string; proposalId?: string; principalId: string };
+export type StudioAction = Exclude<EditorialAction, typeof EditorialAction.AuthorizeDirect>;
+const studioActions: readonly StudioAction[] = Object.values(EditorialAction).filter(
+  (action) => action !== EditorialAction.AuthorizeDirect,
+);
 export type StudioCommand = {
   key: string;
-  action: string;
+  action: StudioAction;
   expectedRevision: number;
   content?: Record<string, unknown>;
   target?: ApiTarget;
@@ -76,7 +80,7 @@ export function editorialClient(
       if (!fields) throw new StudioApiError("profile-mismatch");
       const contribution = proposal?.body.contribution ?? null;
       const own = contribution?.authorPrincipalId === identity.principalId;
-      const can = (capability: string) => scope.capabilities.includes(capability);
+      const can = (capability: Capability) => scope.capabilities.includes(capability);
       const fresh = !contribution || contribution.state === ContributionState.Applied;
       return {
         target: {
@@ -85,13 +89,19 @@ export function editorialClient(
           ...(latest && !fresh ? { proposalId: latest.id } : {}),
         },
         allowed: {
-          save: fresh ? can("entry:create") : own && can("entry:edit-own"),
-          submit: own && can("entry:submit"),
-          approve: !own && can("entry:review"),
-          publish: can("entry:publish"),
-          dismiss: own ? can("entry:edit-own") : can("entry:dismiss"),
-          restore: own ? can("entry:edit-own") : can("entry:dismiss"),
-        } as Record<string, boolean>,
+          [EditorialAction.Save]: fresh
+            ? can(Capability.EntryCreate)
+            : own && can(Capability.EntryEditOwn),
+          [EditorialAction.Submit]: own && can(Capability.EntrySubmit),
+          [EditorialAction.Approve]: !own && can(Capability.EntryReview),
+          [EditorialAction.Publish]: can(Capability.EntryPublish),
+          [EditorialAction.Dismiss]: own
+            ? can(Capability.EntryEditOwn)
+            : can(Capability.EntryDismiss),
+          [EditorialAction.Restore]: own
+            ? can(Capability.EntryEditOwn)
+            : can(Capability.EntryDismiss),
+        } satisfies Record<StudioAction, boolean>,
         profile: { title: fold.title, fields },
         snapshot: {
           revision,
@@ -112,10 +122,9 @@ export function editorialClient(
       const proposal = target.proposalId
         ? `${root}/${encodeURIComponent(target.proposalId)}`
         : undefined;
-      const save = command.action === "save";
+      const save = command.action === EditorialAction.Save;
       if (!save && !proposal) throw new StudioApiError("draft-required");
-      if (!["save", "submit", "approve", "publish", "dismiss", "restore"].includes(command.action))
-        throw new StudioApiError("invalid-input");
+      if (!studioActions.includes(command.action)) throw new StudioApiError("invalid-input");
       return request(save ? (proposal ?? root) : `${proposal}/${command.action}`, {
         method: save && proposal ? "PATCH" : "POST",
         headers: {

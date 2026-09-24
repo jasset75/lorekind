@@ -34,3 +34,17 @@ The skill includes a size checker; it does not install Git hooks or GitHub rules
 - Add tests for authorization rules and provider-contract behavior.
 - Preserve accessibility: keyboard operation, visible focus, reduced motion,
   zoom, and contrast are requirements.
+
+## Named domain values
+
+- Prefer shared named constants over raw string literals for domain actions,
+  states, capabilities, roles and error codes. Define them in the module that owns
+  the concept; reuse them in clients and adapters rather than copying definitions.
+- Prefer `as const` objects with derived union types when both runtime values and
+  types are needed. Type command fields and permission maps with those unions,
+  not unrestricted `string` keys. Preserve existing serialized values.
+- Keep protocol literals, already typed translation keys and one-off display text
+  inline when a constant would add no clarity. Tests may assert literal wire values
+  independently to catch accidental contract changes.
+- Apply this rule to new and modified code without expanding a focused change into
+  an unrelated repository-wide rewrite.

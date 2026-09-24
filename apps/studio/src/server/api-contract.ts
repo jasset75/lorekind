@@ -1,3 +1,4 @@
+import { EditorialAction } from "@lorekind/core";
 import { createRoute, z } from "@hono/zod-openapi";
 
 // Set before constructing schemas: Workers/CSP must not probe or use new Function.
@@ -5,12 +6,12 @@ z.config({ jitless: true });
 
 export const MAX_API_BODY = 131072;
 export const actions = [
-  "submit",
-  "approve",
-  "authorize-direct",
-  "publish",
-  "dismiss",
-  "restore",
+  EditorialAction.Submit,
+  EditorialAction.Approve,
+  EditorialAction.AuthorizeDirect,
+  EditorialAction.Publish,
+  EditorialAction.Dismiss,
+  EditorialAction.Restore,
 ] as const;
 const revision = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const id = z

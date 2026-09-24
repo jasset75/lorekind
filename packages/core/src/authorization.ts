@@ -1,15 +1,15 @@
-export const capabilities = [
-  "entry:read",
-  "entry:create",
-  "entry:edit-own",
-  "entry:dismiss",
-  "entry:submit",
-  "entry:review",
-  "entry:publish",
-  "grant:manage",
-] as const;
-
-export type Capability = (typeof capabilities)[number];
+export const Capability = {
+  EntryRead: "entry:read",
+  EntryCreate: "entry:create",
+  EntryEditOwn: "entry:edit-own",
+  EntryDismiss: "entry:dismiss",
+  EntrySubmit: "entry:submit",
+  EntryReview: "entry:review",
+  EntryPublish: "entry:publish",
+  GrantManage: "grant:manage",
+} as const;
+export type Capability = (typeof Capability)[keyof typeof Capability];
+export const capabilities: readonly Capability[] = Object.values(Capability);
 
 export type FoldRole = "creator" | "curator" | "publisher" | "admin";
 
@@ -76,16 +76,21 @@ export type AuthorizationDecision =
     };
 
 export const roleCapabilities: Readonly<Record<FoldRole, readonly Capability[]>> = {
-  creator: ["entry:read", "entry:create", "entry:edit-own", "entry:submit"],
-  curator: [
-    "entry:read",
-    "entry:create",
-    "entry:edit-own",
-    "entry:submit",
-    "entry:review",
-    "entry:dismiss",
+  creator: [
+    Capability.EntryRead,
+    Capability.EntryCreate,
+    Capability.EntryEditOwn,
+    Capability.EntrySubmit,
   ],
-  publisher: ["entry:read", "entry:review", "entry:publish"],
+  curator: [
+    Capability.EntryRead,
+    Capability.EntryCreate,
+    Capability.EntryEditOwn,
+    Capability.EntrySubmit,
+    Capability.EntryReview,
+    Capability.EntryDismiss,
+  ],
+  publisher: [Capability.EntryRead, Capability.EntryReview, Capability.EntryPublish],
   admin: capabilities,
 };
 
@@ -138,23 +143,26 @@ export function authorize(
   if (grant === undefined) return { allowed: false, reason: "resource-denied" };
 
   if (
-    request.capability === "entry:submit" &&
+    request.capability === Capability.EntrySubmit &&
     request.contribution !== undefined &&
     request.contribution.authorPrincipalId !== request.principalId
   ) {
     return { allowed: false, reason: "resource-denied" };
   }
   if (
-    request.capability === "entry:edit-own" &&
+    request.capability === Capability.EntryEditOwn &&
     request.contribution?.authorPrincipalId !== request.principalId
   ) {
     return { allowed: false, reason: "resource-denied" };
   }
-  if (request.capability === "entry:review" || request.capability === "entry:publish") {
+  if (
+    request.capability === Capability.EntryReview ||
+    request.capability === Capability.EntryPublish
+  ) {
     if (request.contribution === undefined) return { allowed: false, reason: "invalid-context" };
     // Publishing is allowed after independent approvals; the publisher need not be a reviewer.
     if (
-      request.capability === "entry:review" &&
+      request.capability === Capability.EntryReview &&
       policy.mode === "independent" &&
       request.contribution.authorPrincipalId === request.principalId
     ) {
