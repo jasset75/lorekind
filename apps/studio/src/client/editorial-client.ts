@@ -51,7 +51,7 @@ export function editorialClient(
     async load() {
       const { body: identity } = await read<"identity">("/me");
       const { body: folds } = await read<"folds">("/folds");
-      // The current MVP has one workspace; do not silently choose between several.
+      // Workspace selection is not implemented; require exactly one accessible Fold.
       if (folds.items.length !== 1) throw new StudioApiError("workspace-selection-required");
       const fold = folds.items[0]!;
       const scope = identity.folds.find((item) => item.id === fold.id);
