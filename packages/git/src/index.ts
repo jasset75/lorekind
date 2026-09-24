@@ -1,14 +1,25 @@
-export type GitProviderId = "github" | "gitlab" | (string & {});
+export const GitProviderId = {
+  GitHub: "github",
+  GitLab: "gitlab",
+} as const;
+export type GitProviderId = (typeof GitProviderId)[keyof typeof GitProviderId] | (string & {});
 
 export interface RepositoryRef {
   readonly owner: string;
   readonly name: string;
 }
 
+export const FileOperation = {
+  Create: "create",
+  Update: "update",
+  Delete: "delete",
+} as const;
+export type FileOperation = (typeof FileOperation)[keyof typeof FileOperation];
+
 export interface FileChange {
   readonly path: string;
   readonly content: string;
-  readonly operation: "create" | "update" | "delete";
+  readonly operation: FileOperation;
 }
 
 export interface ContributionIdentity {
@@ -17,12 +28,19 @@ export interface ContributionIdentity {
   readonly displayName?: string;
 }
 
+export const ChangeRequestState = {
+  Open: "open",
+  Merged: "merged",
+  Closed: "closed",
+} as const;
+export type ChangeRequestState = (typeof ChangeRequestState)[keyof typeof ChangeRequestState];
+
 export interface ChangeRequest {
   readonly id: string;
   readonly url: URL;
   readonly sourceBranch: string;
   readonly targetBranch: string;
-  readonly state: "open" | "merged" | "closed";
+  readonly state: ChangeRequestState;
 }
 
 export interface SubmitChangeInput {
