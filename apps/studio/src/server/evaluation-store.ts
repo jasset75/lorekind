@@ -1,6 +1,11 @@
 import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import { dirname } from "node:path";
-import { ContributionState, EditorialErrorCode, EditorialError } from "@lorekind/core";
+import {
+  ApprovalKind,
+  ContributionState,
+  EditorialErrorCode,
+  EditorialError,
+} from "@lorekind/core";
 import type { EvaluationStore, WorkspaceSnapshot } from "@lorekind/core";
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -75,7 +80,7 @@ export function decodeSnapshot(text: string): WorkspaceSnapshot {
       !item.approvals.every(
         (approval) =>
           isObject(approval) &&
-          ["direct", "review"].includes(String(approval.kind)) &&
+          Object.values(ApprovalKind).some((kind) => kind === String(approval.kind)) &&
           isObject(approval.scope) &&
           isObject(approval.identity) &&
           typeof approval.identity.principalId === "string" &&

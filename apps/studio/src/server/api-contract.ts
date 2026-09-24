@@ -1,4 +1,9 @@
-import { EditorialAction, InternalEditorialAction, ContributionState } from "@lorekind/core";
+import {
+  ApprovalKind,
+  EditorialAction,
+  InternalEditorialAction,
+  ContributionState,
+} from "@lorekind/core";
 import { createRoute, z } from "@hono/zod-openapi";
 
 // Set before constructing schemas: Workers/CSP must not probe or use new Function.
@@ -46,7 +51,7 @@ const contribution = z
     state,
     version: revision,
     scope,
-    approvals: z.array(z.strictObject({ kind: z.enum(["review", "direct"]), scope, identity })),
+    approvals: z.array(z.strictObject({ kind: z.enum(ApprovalKind), scope, identity })),
     publicationAttemptId: z.string().optional(),
   })
   .openapi("Contribution");
