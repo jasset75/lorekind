@@ -128,3 +128,12 @@ retain their target, revision and idempotency key for explicit retries; a change
 identity detected before submission requires reloading. Cookies and browser origin
 metadata come from the browser, not from a role selector. API errors preserve the
 unsaved draft. Remote Git delivery and real two-user hosted verification remain open.
+
+### Versioned route mounting
+
+The v1 route definitions use relative resource paths. Hono's `basePath()` mounts
+the runtime handlers at `API_V1_BASE_PATH`; the OpenAPI build mounts the same
+relative registry with `route()`. The development adapter and operation links
+use that mount constant too. Public URLs, operation IDs and the generated v1
+document remain unchanged. A future v2 requires its own contract and handlers,
+not a renamed v1 prefix.
