@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SimulatedActor } from "../simulated-actors";
   import { editorialClient, StudioApiError } from "../client/editorial-client";
   import type { ApiTarget, StudioCommand, StudioAction } from "../client/editorial-client";
   import { onMount } from "svelte";
@@ -18,8 +19,6 @@
   const t = (key: MessageKey, params: ValidationIssue["params"] = {}) =>
     translate(language, key, params);
   type Field = { key: string; label: string; labelKey?: string; multiline?: boolean };
-  const SimulatedActor = { Author: "author", Reviewer: "reviewer" } as const;
-  type SimulatedActor = (typeof SimulatedActor)[keyof typeof SimulatedActor];
   const dismissibleStates: readonly ContributionState[] = [
     ContributionState.Draft,
     ContributionState.InReview,

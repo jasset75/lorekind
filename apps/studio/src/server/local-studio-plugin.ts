@@ -1,3 +1,4 @@
+import { SimulatedActor } from "../simulated-actors";
 import { ApiErrorCode } from "../api-errors";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,10 +55,10 @@ export function localStudioPlugin(): Plugin {
         authenticate: async (request) =>
           verifyConfiguredBearer(request.headers.get("authorization"), {
             ...(process.env.LOREKIND_API_AUTHOR_TOKEN
-              ? { author: process.env.LOREKIND_API_AUTHOR_TOKEN }
+              ? { [SimulatedActor.Author]: process.env.LOREKIND_API_AUTHOR_TOKEN }
               : {}),
             ...(process.env.LOREKIND_API_REVIEWER_TOKEN
-              ? { reviewer: process.env.LOREKIND_API_REVIEWER_TOKEN }
+              ? { [SimulatedActor.Reviewer]: process.env.LOREKIND_API_REVIEWER_TOKEN }
               : {}),
           }),
         workspaces: async () => [await loadWorkspace("api")],
@@ -131,7 +132,7 @@ export function localStudioPlugin(): Plugin {
           const app = await loadWorkspace();
           const url = new URL(request.url!, `http://${host}`);
           const actor = url.searchParams.get("actor");
-          if (actor !== "author" && actor !== "reviewer")
+          if (actor !== SimulatedActor.Author && actor !== SimulatedActor.Reviewer)
             return send(403, { error: LocalStudioErrorCode.UnknownActor });
           const context = evaluationContext(app, actor);
           if (request.method === "POST") {

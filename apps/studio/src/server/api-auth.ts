@@ -1,10 +1,11 @@
+import type { SimulatedActor } from "../simulated-actors";
 import { timingSafeEqual } from "node:crypto";
 import type { ApiPrincipal } from "./editorial-api";
 
 /** Development credential adapter. Production may inject an OIDC/session verifier instead. */
 export function verifyConfiguredBearer(
   authorization: string | null,
-  credentials: { author?: string; reviewer?: string },
+  credentials: Partial<Record<SimulatedActor, string>>,
 ): ApiPrincipal | null {
   const configured = Object.entries(credentials).filter(
     (item): item is [string, string] => item[1] !== undefined,
