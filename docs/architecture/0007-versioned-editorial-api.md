@@ -106,3 +106,25 @@ grants, resource isolation, preconditions, immutable historical proposals, revis
 invalidation and receipt ownership. `pnpm test:api` starts an isolated loopback
 server, uses ephemeral credentials, restarts after approval and verifies exact
 recovery and idempotent publication. It also verifies simulator/API separation.
+
+### Studio browser client
+
+Build or serve Studio with `LOREKIND_STUDIO_MODE=api` to use the same-origin
+`/api/v1` routes. `LOREKIND_STUDIO_API_BASE_PATH` overrides this path at build
+time; Studio injects it into the client. Only absolute same-origin paths without
+a trailing slash are accepted. Changing the path does not make this client
+compatible with a different API contract. The default remains local simulation. API mode removes the actor
+selector and uses `/me` for identity and capability hints; the server remains
+authoritative for every operation. It never falls back to the simulator.
+
+The host must serve the browser API boundary and establish its trusted session.
+This flag configures the UI only: the loopback development plugin still exposes
+the bearer-token API, and a static build does not supply an API backend. Never
+place bearer tokens or Access assertions in the frontend configuration.
+
+The client currently requires one accessible Fold and opens its latest proposal.
+Reads must have matching workspace ETags before becoming editable. Mutations
+retain their target, revision and idempotency key for explicit retries; a changed
+identity detected before submission requires reloading. Cookies and browser origin
+metadata come from the browser, not from a role selector. API errors preserve the
+unsaved draft. Remote Git delivery and real two-user hosted verification remain open.

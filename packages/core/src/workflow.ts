@@ -1,8 +1,16 @@
 import { authorize } from "./authorization";
 import type { Capability, Delegation, FoldGrant, ReviewPolicy } from "./authorization";
 
-export type ContributionState =
-  "Draft" | "InReview" | "Approved" | "Dismissed" | "Publishing" | "Applied" | "PublicationFailed";
+export const ContributionState = {
+  Draft: "Draft",
+  InReview: "InReview",
+  Approved: "Approved",
+  Dismissed: "Dismissed",
+  Publishing: "Publishing",
+  Applied: "Applied",
+  PublicationFailed: "PublicationFailed",
+} as const;
+export type ContributionState = (typeof ContributionState)[keyof typeof ContributionState];
 
 export type CanonicalState = "Unpublished" | "Published" | "Withdrawn";
 
