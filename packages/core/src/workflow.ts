@@ -1,6 +1,6 @@
 import { EditorialErrorCode } from "./errors";
 import { EditorialAction, InternalEditorialAction } from "./actions";
-import { authorize, Capability } from "./authorization";
+import { authorize, Capability, ReviewMode } from "./authorization";
 import type { Delegation, FoldGrant, ReviewPolicy } from "./authorization";
 
 export const ContributionState = {
@@ -38,8 +38,14 @@ export interface EditorialIdentity {
   readonly agentId?: string;
 }
 
+export const ApprovalKind = {
+  Review: "review",
+  Direct: "direct",
+} as const;
+export type ApprovalKind = (typeof ApprovalKind)[keyof typeof ApprovalKind];
+
 export interface Approval {
-  readonly kind: "review" | "direct";
+  readonly kind: ApprovalKind;
   readonly scope: ReviewScope;
   readonly identity: EditorialIdentity;
 }
@@ -164,7 +170,8 @@ function approvalIsCurrent(
 ): boolean {
   if (!sameScope(approval.scope, scopeFor(contribution.scope.contentRevision, context)))
     return false;
-  if ((context.policy.mode === "direct") !== (approval.kind === "direct")) return false;
+  if ((context.policy.mode === ReviewMode.Direct) !== (approval.kind === ApprovalKind.Direct))
+    return false;
   const { delegationId, agentId } = approval.identity;
   if (
     delegationId !== undefined &&
@@ -182,16 +189,18 @@ function approvalIsCurrent(
       // Explicitly remove the calling actor's delegation when rechecking another actor.
       ...(delegationId === undefined ? {} : { delegationId }),
     },
-    approval.kind === "direct" ? Capability.EntryPublish : Capability.EntryReview,
+    approval.kind === ApprovalKind.Direct ? Capability.EntryPublish : Capability.EntryReview,
   );
   return identity !== undefined;
 }
 
 function hasApprovals(approvals: readonly Approval[], policy: ReviewPolicy): boolean {
-  return policy.mode === "direct"
-    ? approvals.some((item) => item.kind === "direct")
+  return policy.mode === ReviewMode.Direct
+    ? approvals.some((item) => item.kind === ApprovalKind.Direct)
     : new Set(
-        approvals.filter((item) => item.kind === "review").map((item) => item.identity.principalId),
+        approvals
+          .filter((item) => item.kind === ApprovalKind.Review)
+          .map((item) => item.identity.principalId),
       ).size >= policy.requiredApprovals;
 }
 
@@ -287,7 +296,7 @@ export function transitionContribution(
       state = ContributionState.Draft;
       break;
     case EditorialAction.Submit:
-      if (state !== ContributionState.Draft || context.policy.mode !== "independent")
+      if (state !== ContributionState.Draft || context.policy.mode !== ReviewMode.Independent)
         return { ok: false, error: EditorialErrorCode.InvalidTransition };
       if (!sameScope(scope, currentScope))
         return { ok: false, error: EditorialErrorCode.StaleReview };
@@ -298,15 +307,15 @@ export function transitionContribution(
       const direct = command.action === EditorialAction.AuthorizeDirect;
       if (
         direct
-          ? state !== ContributionState.Draft || context.policy.mode !== "direct"
-          : state !== ContributionState.InReview || context.policy.mode !== "independent"
+          ? state !== ContributionState.Draft || context.policy.mode !== ReviewMode.Direct
+          : state !== ContributionState.InReview || context.policy.mode !== ReviewMode.Independent
       )
         return { ok: false, error: EditorialErrorCode.InvalidTransition };
       if (!sameScope(scope, currentScope))
         return { ok: false, error: EditorialErrorCode.StaleReview };
       approvals = [
         ...currentApprovals.filter((item) => item.identity.principalId !== identity.principalId),
-        { kind: direct ? "direct" : "review", scope, identity },
+        { kind: direct ? ApprovalKind.Direct : ApprovalKind.Review, scope, identity },
       ];
       state = hasApprovals(approvals, context.policy)
         ? ContributionState.Approved

@@ -11,7 +11,13 @@ export const Capability = {
 export type Capability = (typeof Capability)[keyof typeof Capability];
 export const capabilities: readonly Capability[] = Object.values(Capability);
 
-export type FoldRole = "creator" | "curator" | "publisher" | "admin";
+export const FoldRole = {
+  Creator: "creator",
+  Curator: "curator",
+  Publisher: "publisher",
+  Admin: "admin",
+} as const;
+export type FoldRole = (typeof FoldRole)[keyof typeof FoldRole];
 
 export interface FoldDefinition {
   readonly id: string;
@@ -33,9 +39,15 @@ export interface ContributionContext {
   readonly authorPrincipalId: string;
 }
 
+export const ReviewMode = {
+  Direct: "direct",
+  Independent: "independent",
+} as const;
+export type ReviewMode = (typeof ReviewMode)[keyof typeof ReviewMode];
+
 export type ReviewPolicy =
-  | { readonly mode: "direct" }
-  | { readonly mode: "independent"; readonly requiredApprovals: number };
+  | { readonly mode: typeof ReviewMode.Direct }
+  | { readonly mode: typeof ReviewMode.Independent; readonly requiredApprovals: number };
 
 /** Loaded from a trusted identity/policy boundary, never from command JSON. */
 export interface Delegation {
@@ -76,13 +88,13 @@ export type AuthorizationDecision =
     };
 
 export const roleCapabilities: Readonly<Record<FoldRole, readonly Capability[]>> = {
-  creator: [
+  [FoldRole.Creator]: [
     Capability.EntryRead,
     Capability.EntryCreate,
     Capability.EntryEditOwn,
     Capability.EntrySubmit,
   ],
-  curator: [
+  [FoldRole.Curator]: [
     Capability.EntryRead,
     Capability.EntryCreate,
     Capability.EntryEditOwn,
@@ -90,8 +102,8 @@ export const roleCapabilities: Readonly<Record<FoldRole, readonly Capability[]>>
     Capability.EntryReview,
     Capability.EntryDismiss,
   ],
-  publisher: [Capability.EntryRead, Capability.EntryReview, Capability.EntryPublish],
-  admin: capabilities,
+  [FoldRole.Publisher]: [Capability.EntryRead, Capability.EntryReview, Capability.EntryPublish],
+  [FoldRole.Admin]: capabilities,
 };
 
 export function createGrant(input: {
@@ -116,9 +128,9 @@ export function authorize(
 ): AuthorizationDecision {
   const now = request.now ?? new Date();
   if (!Number.isFinite(now.getTime())) return { allowed: false, reason: "invalid-context" };
-  const policy = request.policy ?? { mode: "independent", requiredApprovals: 1 };
+  const policy = request.policy ?? { mode: ReviewMode.Independent, requiredApprovals: 1 };
   if (
-    policy.mode === "independent" &&
+    policy.mode === ReviewMode.Independent &&
     (!Number.isSafeInteger(policy.requiredApprovals) || policy.requiredApprovals < 1)
   )
     return { allowed: false, reason: "invalid-context" };
@@ -163,7 +175,7 @@ export function authorize(
     // Publishing is allowed after independent approvals; the publisher need not be a reviewer.
     if (
       request.capability === Capability.EntryReview &&
-      policy.mode === "independent" &&
+      policy.mode === ReviewMode.Independent &&
       request.contribution.authorPrincipalId === request.principalId
     ) {
       return { allowed: false, reason: "self-approval" };
