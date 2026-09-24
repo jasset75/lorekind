@@ -3,6 +3,8 @@ import { EditorialAction, InternalEditorialAction } from "./actions";
 import { authorize, Capability } from "./authorization";
 import {
   ContributionState,
+  ContributionIntent,
+  PublicationOutcome,
   createDraft,
   reconcilePublication,
   transitionContribution,
@@ -87,11 +89,17 @@ export interface EvaluationStore {
     ) => Promise<{ snapshot: WorkspaceSnapshot; result: T }>,
   ): Promise<T>;
 }
+export const ProposalWriteMode = {
+  Create: "create",
+  Update: "update",
+} as const;
+export type ProposalWriteMode = (typeof ProposalWriteMode)[keyof typeof ProposalWriteMode];
+
 export type EvaluationCommand = {
   readonly key: string;
   readonly expectedRevision: number;
   readonly proposalId?: string;
-  readonly mode?: "create" | "update";
+  readonly mode?: ProposalWriteMode;
 } & (
   | { readonly action: typeof EditorialAction.Save; readonly content: Content }
   | {
@@ -254,9 +262,9 @@ export class EditorialWorkspace {
         throw new EditorialError(EditorialErrorCode.ProposalNotCurrent);
       const creating =
         snapshot.contribution === null || snapshot.contribution.state === ContributionState.Applied;
-      if (command.mode === "create" && !creating)
+      if (command.mode === ProposalWriteMode.Create && !creating)
         throw new EditorialError(EditorialErrorCode.ActiveProposalExists);
-      if (command.mode === "update" && creating)
+      if (command.mode === ProposalWriteMode.Update && creating)
         throw new EditorialError(EditorialErrorCode.ProposalNotEditable);
       let proposalId = currentId;
       let baseContent = snapshot.baseContent;
@@ -275,7 +283,10 @@ export class EditorialWorkspace {
           snapshot.contribution === null ||
           snapshot.contribution.state === ContributionState.Applied
             ? decision(
-                createDraft({ id: this.profile.id, contentRevision, intent: "publish" }, context),
+                createDraft(
+                  { id: this.profile.id, contentRevision, intent: ContributionIntent.Publish },
+                  context,
+                ),
               )
             : decision(
                 transitionContribution(
@@ -319,7 +330,7 @@ export class EditorialWorkspace {
           expectedVersion: contribution.version,
           attemptId,
           scope: contribution.scope,
-          outcome: "applied",
+          outcome: PublicationOutcome.Applied,
         });
         if (!applied.ok) throw new EditorialError(EditorialErrorCode.Conflict);
         contribution = applied.contribution;

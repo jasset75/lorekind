@@ -21,7 +21,25 @@ const editableStates: readonly ContributionState[] = [
   ContributionState.PublicationFailed,
 ];
 
-export type CanonicalState = "Unpublished" | "Published" | "Withdrawn";
+export const CanonicalState = {
+  Unpublished: "Unpublished",
+  Published: "Published",
+  Withdrawn: "Withdrawn",
+} as const;
+export type CanonicalState = (typeof CanonicalState)[keyof typeof CanonicalState];
+
+export const ContributionIntent = {
+  Publish: "publish",
+  Withdraw: "withdraw",
+} as const;
+export type ContributionIntent = (typeof ContributionIntent)[keyof typeof ContributionIntent];
+
+export const PublicationOutcome = {
+  Applied: "applied",
+  Failed: "failed",
+  Unknown: "unknown",
+} as const;
+export type PublicationOutcome = (typeof PublicationOutcome)[keyof typeof PublicationOutcome];
 
 /** Opaque provider identifiers; only equality has domain meaning. */
 export interface ReviewScope {
@@ -55,7 +73,7 @@ export interface Contribution {
   readonly id: string;
   readonly foldId: string;
   readonly authorPrincipalId: string;
-  readonly intent: "publish" | "withdraw";
+  readonly intent: ContributionIntent;
   readonly state: ContributionState;
   /** Conditional persistence of this version is required; a reducer alone is not a lock. */
   readonly version: number;
@@ -374,7 +392,7 @@ export function reconcilePublication(
     readonly expectedVersion: number;
     readonly attemptId: string;
     readonly scope: ReviewScope;
-    readonly outcome: "applied" | "failed" | "unknown";
+    readonly outcome: PublicationOutcome;
   },
 ):
   | { readonly ok: true; readonly contribution: Contribution }
@@ -389,12 +407,12 @@ export function reconcilePublication(
   return {
     ok: true,
     contribution:
-      result.outcome === "unknown"
+      result.outcome === PublicationOutcome.Unknown
         ? contribution
         : {
             ...contribution,
             state:
-              result.outcome === "applied"
+              result.outcome === PublicationOutcome.Applied
                 ? ContributionState.Applied
                 : ContributionState.PublicationFailed,
             version: contribution.version + 1,
