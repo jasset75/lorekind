@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import type { ViteUserConfig } from "astro";
 type Plugin = Extract<NonNullable<ViteUserConfig["plugins"]>[number], { name: string }>;
 import {
+  EditorialAction,
   EditorialErrorCode,
   EditorialError,
   EditorialWorkspace,
@@ -154,10 +155,15 @@ export function localStudioPlugin(): Plugin {
               ) ||
               typeof body.key !== "string" ||
               !Number.isSafeInteger(body.expectedRevision) ||
-              !["save", "submit", "approve", "publish", "dismiss", "restore"].includes(
-                body.action,
-              ) ||
-              (body.action === "save" &&
+              ![
+                EditorialAction.Save,
+                EditorialAction.Submit,
+                EditorialAction.Approve,
+                EditorialAction.Publish,
+                EditorialAction.Dismiss,
+                EditorialAction.Restore,
+              ].includes(body.action) ||
+              (body.action === EditorialAction.Save &&
                 (!body.content || typeof body.content !== "object" || Array.isArray(body.content)))
             )
               return send(400, { error: EditorialErrorCode.InvalidInput });

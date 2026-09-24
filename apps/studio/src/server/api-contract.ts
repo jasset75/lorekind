@@ -1,4 +1,4 @@
-import { EditorialAction } from "@lorekind/core";
+import { EditorialAction, InternalEditorialAction, ContributionState } from "@lorekind/core";
 import { createRoute, z } from "@hono/zod-openapi";
 
 // Set before constructing schemas: Workers/CSP must not probe or use new Function.
@@ -19,15 +19,7 @@ const id = z
   .min(1)
   .regex(/^[^/\\]+$/);
 const content = z.record(z.string(), z.unknown()).openapi("Content");
-const state = z.enum([
-  "Draft",
-  "InReview",
-  "Approved",
-  "Dismissed",
-  "Publishing",
-  "Applied",
-  "PublicationFailed",
-]);
+const state = z.enum(ContributionState);
 const scope = z
   .strictObject({
     contentRevision: z.string(),
@@ -146,7 +138,11 @@ export const responses = {
       items: z.array(
         z.union([
           z.strictObject({
-            action: z.enum(["create", "revise", ...actions]),
+            action: z.enum([
+              InternalEditorialAction.Create,
+              InternalEditorialAction.Revise,
+              ...actions,
+            ]),
             identity,
             contributionId: z.string(),
             foldId: z.string(),
@@ -155,7 +151,7 @@ export const responses = {
             at: z.string(),
           }),
           z.strictObject({
-            action: z.literal("applied-local"),
+            action: z.literal(InternalEditorialAction.AppliedLocal),
             attemptId: z.string(),
             at: z.string(),
           }),

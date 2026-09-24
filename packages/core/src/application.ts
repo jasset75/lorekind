@@ -1,7 +1,12 @@
 import { EditorialErrorCode } from "./errors";
-import { EditorialAction } from "./actions";
+import { EditorialAction, InternalEditorialAction } from "./actions";
 import { authorize, Capability } from "./authorization";
-import { createDraft, reconcilePublication, transitionContribution } from "./workflow";
+import {
+  ContributionState,
+  createDraft,
+  reconcilePublication,
+  transitionContribution,
+} from "./workflow";
 import type { Contribution, Transition, WorkflowContext, WorkflowResult } from "./workflow";
 
 export type Content = Readonly<Record<string, unknown>>;
@@ -60,7 +65,11 @@ export interface WorkspaceSnapshot {
   readonly previousProposals?: readonly SavedProposal[];
   readonly audit: readonly (
     | Transition["audit"]
-    | { readonly action: "applied-local"; readonly attemptId: string; readonly at: string }
+    | {
+        readonly action: typeof InternalEditorialAction.AppliedLocal;
+        readonly attemptId: string;
+        readonly at: string;
+      }
   )[];
   readonly operations: readonly {
     readonly actor: string;
@@ -137,7 +146,9 @@ export function contentDiff(
 
 export function savedProposals(snapshot: WorkspaceSnapshot): readonly SavedProposal[] {
   if (snapshot.contribution === null) return snapshot.previousProposals ?? [];
-  const start = snapshot.audit.findLastIndex((event) => event.action === "create");
+  const start = snapshot.audit.findLastIndex(
+    (event) => event.action === InternalEditorialAction.Create,
+  );
   return [
     ...(snapshot.previousProposals ?? []),
     {
@@ -145,7 +156,7 @@ export function savedProposals(snapshot: WorkspaceSnapshot): readonly SavedPropo
       content: snapshot.draft,
       baseContent:
         snapshot.baseContent ??
-        (snapshot.contribution.state === "Applied" ? null : snapshot.canonical),
+        (snapshot.contribution.state === ContributionState.Applied ? null : snapshot.canonical),
       contribution: snapshot.contribution,
       audit: snapshot.audit.slice(Math.max(0, start)),
     },
@@ -241,7 +252,8 @@ export class EditorialWorkspace {
         (snapshot.contribution === null || command.proposalId !== currentId)
       )
         throw new EditorialError(EditorialErrorCode.ProposalNotCurrent);
-      const creating = snapshot.contribution === null || snapshot.contribution.state === "Applied";
+      const creating =
+        snapshot.contribution === null || snapshot.contribution.state === ContributionState.Applied;
       if (command.mode === "create" && !creating)
         throw new EditorialError(EditorialErrorCode.ActiveProposalExists);
       if (command.mode === "update" && creating)
@@ -260,7 +272,8 @@ export class EditorialWorkspace {
         this.validate(command.content);
         const contentRevision = await contentDigest(command.content);
         transition =
-          snapshot.contribution === null || snapshot.contribution.state === "Applied"
+          snapshot.contribution === null ||
+          snapshot.contribution.state === ContributionState.Applied
             ? decision(
                 createDraft({ id: this.profile.id, contentRevision, intent: "publish" }, context),
               )
@@ -268,7 +281,7 @@ export class EditorialWorkspace {
                 transitionContribution(
                   snapshot.contribution,
                   {
-                    action: "revise",
+                    action: InternalEditorialAction.Revise,
                     contentRevision,
                     expectedVersion: snapshot.contribution.version,
                   },
@@ -312,7 +325,11 @@ export class EditorialWorkspace {
         contribution = applied.contribution;
         canonical = draft;
         canonicalRevision = await contentDigest(canonical);
-        audit.push({ action: "applied-local", attemptId, at: context.now.toISOString() });
+        audit.push({
+          action: InternalEditorialAction.AppliedLocal,
+          attemptId,
+          at: context.now.toISOString(),
+        });
       }
       const receipt = {
         key: command.key,

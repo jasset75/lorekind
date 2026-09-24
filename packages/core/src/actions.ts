@@ -9,3 +9,12 @@ export const EditorialAction = {
   Restore: "restore",
 } as const;
 export type EditorialAction = (typeof EditorialAction)[keyof typeof EditorialAction];
+
+/** Internal workflow and evaluation audit actions; not public client commands. */
+export const InternalEditorialAction = {
+  Create: "create",
+  Revise: "revise",
+  AppliedLocal: "applied-local",
+} as const;
+export type InternalEditorialAction =
+  (typeof InternalEditorialAction)[keyof typeof InternalEditorialAction];
