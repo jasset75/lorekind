@@ -33,3 +33,6 @@ and an explicit status.
 - [0011: No speculative compatibility for unpublished interfaces](./0011-no-speculative-compatibility.md):
   remove unused routes and aliases without redirects; preserve saved data and
   update known local setup instructions directly.
+- [0012: Hosted browser composition](./0012-hosted-browser-composition.md):
+  proposed host contract for identity, distribution, routing and durable remote
+  editing; deployment and persistence acceptance remain pending.
